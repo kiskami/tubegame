@@ -1,0 +1,156 @@
+#-*- mode: org; -*-
+#+TITLE: Tubegame Design Doksi
+#+AUTHOR: Kálmán Kiss
+#+EMAIL: kiskami@freemail.hu
+#+OPTIONS: timstamp:t
+#+KEYWORDS: tubegame, 3D game, Ogre 3D, Common Lisp
+
+
+[2013-09-02 H]
+Kiss Kálmán, kiskami@freemail.hu
+
+** Koncepció
+
+3D térben, csõszerû labirintusban ûrhajóval repülõs, lövöldözõs játék.
+A játék célja; túlélni a labirintusban repülve, és minél több pontot
+gyûjteni a különbözõ akadályokat és ellenfeleket kilõve.
+
+*** Technológia
+
+A készülõ llgs-engine-t felhasználni, OGRE 3D engine, OIS és C++ ill. 
+Clozure CL alapon.
+
+*** Grafika
+
+Retro kinézet, egyszerû 3D grafika, olyan primitív objektumokkal, mint kocka, 
+henger, gömb, gúla, csillag, stb.
+
+** Játékmenet
+
+A játékos az ûrhajójával egy kezdõponttól indul. (Lehet ez esetleg több
+lehetõség közül véletlenszerûen kiválasztott?) Az ûrhajó konstans sebességgel
+halad elõre, esetleg kicsit lehet lassítani, de megállítani nem.
+
+A labirintusban a folyosó falának vagy más akadálynak ütközve sérül a hajó, 
+fogy a szerkezeti stabilitása. Ha ez elfogy, akkor a hajó felrobban és vége a 
+játéknak.
+
+Az ûrhajón egy sugárfegyver van, amely képes lerombolni az akadályokat, de a 
+falakat nem. Az akadályok lerombolásáért pontokat gyûjt a játékos.
+
+A pályákon vannak a játékos ûrhajóra lövõ tornyok és korlátozottan mozgó
+ellenséges ûrhajók is. Ezeket is ki lehet lõni és pontot gyûjteni.
+
+Minden pálya egy adott pontmennyiség elérése után tekinthetõ megcsináltnak, ezután a
+játékosnak vissza kell térnie a kiindulóponthoz a játék bejfejezéséhez.
+
+*** Irányítás
+
+Kezdésnél bal egérgomb indítja a játékot.
+
+Egeret mozgatva:
+- elõre - ûrhajó sûllyed/átfordul
+- hátra - ûrhajó emelkedik/átfordul
+- balra/jobbdra - ûrhajó döntve kanyarodik
+
+Bal egérgomb megnyomása: tüzelés fegyverrel
+
+ESC billentyû megnyomása: kilépés a játékból, programból.
+
+** Pályaelemek
+
+Egy pálya egy labirintus.
+
+*** Háttér
+
+Csillagos univerzumkép, skybox.
+
+*** Falelemek
+
+- kocka 1,2,...,6 nyílással
+
+*** Aszteroidák
+
+- gömbök, krumplik 3-3 méretben
+  - pontérték!
+
+*** Powerups
+
+- szerkezeti stabilitás +1, +5, +10
+- pajzs +1, +5, +10
+- fegyver energia +1, +5, +10
+- sebesség plussz +1, +5
+  - idõleges hatású
+
+*** Lövegtornyok
+
+- 1-2 csövû, változó sebzésû ágyukkal
+  - pontérték!
+
+*** Ellenfelek
+
+?
+
+*** Egyéb
+
+- kezdõpont - start/cél
+- transzporter - a pálya egy másik pontjára transzportálja az ûrhajót
+
+
+*** Pályaleírás
+
+Egy lisp fájl, benne egy mátrix leírása karakteresen listában.
+A mátrixban minden térkocka tartalmát egy lista írja le, kulcsszavakkal címkézve az adatokat.
+
+**** Fájlszerkezet
+
+#+BEGIN_SRC lisp
+((xs, ys, zs) ; elõször a tér méretei - a mátrix dimenziói x, y, z koordináták mentén
+ ; utána a pálya leírása xz síkban y szerint csökkenõen
+ ; x=0, z=0-tól növekvõen sorban a méretekig
+ (((1 :rot (xr,yr,zr) :sta :cel :ast 1 :ss 1 :pa 1 :wea 1 :spe 5 :tur 1 :ene 1 ) nil ...)(...)) ;  kockanyílások száma, forgatások a tengelyek mentén fokban
+ (...)
+ ...
+ (1000, 100, 50, 0) ; végül a pálya és ûrhajó paraméterei
+)
+#+END_SRC
+
+**** Egy térelem leírásának szerkezete
+
+#+BEGIN_SRC lisp
+(1 :rot (xr,yr,zr) :sta :cel :ast 1 :ss 1 :pa 1 :wea 1 :spe 5 :tur 1 :ene 1 )
+#+END_SRC
+
+Lista elemei:
+- az elsõ <szám> - kockanyílások száma, utána tetszõleges sorrendben a többi, nem kötelezõen
+  - 1 - egyik oldalt nyílás - folyosó vége
+  - 2 - két nyílás, egymással szemben - csõ
+  - -2 - két nyílás, egymás melletti oldalon
+  - 3 - három nyílás, egy síkban az oldalakon
+  - -3 - három nyílás, három egymással szomszédos oldalon
+  - 4 - négy nyílás
+  - 5 - öt nyílás
+  - 6 - hat nyílás
+- :rot (xr,yr,zr) - kocka forgatása tengelyek mentén, a megadott fokokkal
+- :sta - startpozíció van itt
+- :cel - célpozíció van itt
+- :ast <szám> - aszteroida/mezõ van itt
+- :ss <szám> - szerkezeti stabilitás powerup van itt
+- :pa <szám> - pajzs powerup van itt
+- :wea <szám> - fegyver powerup van itt
+- :spe <szám> - sebesség powerup van itt
+- :tur <szám> - lövegtorony van itt
+- :ene <szám> - ellenség van itt
+
+**** Pálya és ûrhajó paraméterei
+
+Ha hiányzik, akkor a default értékek lesznek használva.
+
+#+BEGIN_SRC lisp
+ (1000, 100, 50, 0)
+#+END_SRC
+
+1. pályán összegyûjtendõ pontszám
+2. ûrhajó szerkezeti stabilitás kezdõértéke
+3. ûrhajó fegyvere energiaszint kezdõértéke
+4. ûrhajó pajzs energiaszint kezdõértéke
