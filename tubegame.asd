@@ -8,5 +8,5 @@
   :license "GPL2"
   :depends-on (#:cffi)
   :components ((:file "package")
+	       (:file "globals")
                (:file "tubegame")))
-
