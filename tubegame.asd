@@ -6,7 +6,9 @@
   :author "Kalman Kiss <kiskami@freemail.hu>"
   :version "0.0.1"
   :license "GPL2"
-  :depends-on (#:cffi)
+  :depends-on (#:llgs-engine-cl)
   :components ((:file "package")
 	       (:file "globals")
+	       (:file "game")
+	       (:file "startscreen")
                (:file "tubegame")))

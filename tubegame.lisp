@@ -5,6 +5,8 @@
 ;;;;
 ;;;; tubegame.lisp
 
+(in-package :cl-user)
+
 (unless (find-package :asdf)
   (require :asdf))
 
@@ -34,35 +36,52 @@
 	   (first params) (second params) (third params)
 	   (fourth params) (fifth params)))
   (format t "Creating renderwindow...~A~%" (llgs-engine-cl:render-createrenderwindow "tubegame"))
-  (format t "Creating scenemanager...~A~%" (llgs-engine-cl:render-createscenemanager "INTERIOR" "tubescene"))))
-
-(defun update-input ()
-  "Receive input events."
-  nil)
-
-(defun one-game-frame (elapsedt)
-  "Update state and render one game playing frame."
-  (if (< 0 elapsedt)
-      nil
-      nil))
-
-(defun one-startscreen-frame (elapsedt)
-  "Render one scrartscreen frame."
-  (if (< 0 elapsedt)
-      nil
-      nil))
+  (format t "Creating scenemanager...~A~%" (llgs-engine-cl:render-createscenemanager "INTERIOR" "tubescene"))
+  (format t "Initializing camera and scene...~%")
+  (setq *main-camera* (llgs-engine-cl:render-createcamera "main camera"))
+  (llgs-engine-cl:render-setcamerapos *main-camera* 0.0 100.0 -100.0)
+  (llgs-engine-cl:render-cameralookat *main-camera* 0.0 0.0 0.0)
+  (llgs-engine-cl:render-setcameranearclipdist *main-camera* 5.0)
+  (llgs-engine-cl:render-setcameraasviewport *main-camera*)
+  (llgs-engine-cl:render-setviewportbackground 0.5 1.0 0.5)
+  (llgs-engine-cl:render-setambientlight 0.85 0.85 0.85)
+  (llgs-engine-cl:render-setskybox *SKYBOX-MAT*)))
 
 (defun game_run ()
   "Call this to start and run the game."
   (disp-name-and-license)
-  (let ((params (parse-cmdargs)))
+  (let ((params (parse-cmdargs))
+	(maintimer nil) ; measuring time between frames
+	(deltatime 0))
     (init-game params)
-    (loop while (not *game-should-exit*) do
-;	 (format t "Rendering...~%")
-	 (update-input)
+    (llgs-engine-cl:input-init)
+    (setq maintimer (llgs-engine-cl:timer-create))
+    ; gameloop
+    (loop until *game-should-exit* do
+;	 (format t "0~%")
+	 (llgs-engine-cl:input-capture)
+;	 (format t "1~%")
+
 	 ; simple gamestate :)
 	 (if *in-game* 
-	     (one-game-frame 0)
-	     (one-startscreen-frame 0))
-	 (setq *game-should-exit* t)))
+	     (one-game-frame deltatime)
+	     (one-startscreen-frame deltatime))
+;	 (format t "2~%")
+
+	 ; render one frame
+	 (llgs-engine-cl:render-oneframe)
+;	 (format t "3~%")
+	 (setq deltatime (/ (llgs-engine-cl:timer-getmicroseconds maintimer) 1000000.0))
+;	 (format t "4~%")
+
+	 (llgs-engine-cl:timer-reset maintimer)
+;	 (format t "5 - ~A~%" (llgs-engine-cl:input-keypressed *F11-KEY*))
+
+	 (if (llgs-engine-cl:input-keypressed *F11-KEY*) ; screenshot
+	     (llgs-engine-cl:render-screenshottofile "tubegame-screenshot-"))
+	 (if (llgs-engine-cl:input-keypressed *ESC-KEY*) ; end playing game
+	     (setq *game-should-exit* t))
+;	 (format t "6~%")
+	 ))
+  (llgs-engine-cl:render-shutdown)
   (format t "Game end.~%"))
