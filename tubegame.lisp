@@ -43,7 +43,7 @@
     (llgs-engine-cl:render-attachmoveable *main-camera-node* *main-camera*)
     (llgs-engine-cl:render-setscenenodepos *main-camera-node* 0.0 5.0 5.0)
     (llgs-engine-cl:render-cameralookat *main-camera* 0.0 0.0 0.0)
-    (llgs-engine-cl:render-setcameranearclipdist *main-camera* 1.0)
+    (llgs-engine-cl:render-setcameranearclipdist *main-camera* 0.2)
     (llgs-engine-cl:render-setcamerafarclipdist *main-camera* 15000.0)
     (llgs-engine-cl:render-setcameraasviewport *main-camera*)
     (llgs-engine-cl:render-setviewportbackground 0.5 1.0 0.5)

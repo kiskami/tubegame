@@ -108,17 +108,17 @@ A mátrixban minden térkocka tartalmát egy lista írja le, kulcsszavakkal címkézve
 ((xs, ys, zs) ; elõször a tér méretei - a mátrix dimenziói x, y, z koordináták mentén
  ; utána a pálya leírása xz síkban y szerint csökkenõen
  ; x=0, z=0-tól növekvõen sorban a méretekig
- (((1 :rot (xr,yr,zr) :sta :cel :ast 1 :ss 1 :pa 1 :wea 1 :spe 5 :tur 1 :ene 1 ) nil ...)(...)) ;  kockanyílások száma, forgatások a tengelyek mentén fokban
+ (((1 :rotx xr :roty yr :rotz zr :sta t :cel t :ast1 1 :ast2 5 :ast3 10 :ss 1 :pa 1 :wea 1 :spe 5 :tur 1 :ene 1 ) nil ...)(...)) 
  (...)
  ...
- (1000, 100, 50, 0) ; végül a pálya és ûrhajó paraméterei
+ (1000 100 50 0) ; végül a pálya és ûrhajó paraméterei
 )
 #+END_SRC
 
 **** Egy térelem leírásának szerkezete
 
 #+BEGIN_SRC lisp
-(1 :rot (xr,yr,zr) :sta :cel :ast 1 :ss 1 :pa 1 :wea 1 :spe 5 :tur 1 :ene 1 )
+(1 :rotx xr :roty yr :rotz zr :sta t :cel t :ast1 1 :ast2 5 :ast3 10 :ss 1 :pa 1 :wea 1 :spe 5 :tur 1 :ene 1)
 #+END_SRC
 
 Lista elemei:
@@ -129,12 +129,13 @@ Lista elemei:
   - 3 - három nyílás, egy síkban az oldalakon
   - -3 - három nyílás, három egymással szomszédos oldalon
   - 4 - négy nyílás
+  - -4 - kettõ nyílás egymással szemben, kettõ egymás mellett
   - 5 - öt nyílás
   - 6 - hat nyílás
-- :rot (xr,yr,zr) - kocka forgatása tengelyek mentén, a megadott fokokkal
-- :sta - startpozíció van itt
-- :cel - célpozíció van itt
-- :ast <szám> - aszteroida/mezõ van itt
+- :rotx <szög> :roty <szög> :rotz <szög> - kocka forgatása tengelyek mentén, a megadott fokokkal
+- :sta t - startpozíció van itt
+- :cel t - célpozíció van itt
+- :ast1/2/3 <szám> - hány és milyen aszteroida van itt
 - :ss <szám> - szerkezeti stabilitás powerup van itt
 - :pa <szám> - pajzs powerup van itt
 - :wea <szám> - fegyver powerup van itt
@@ -144,13 +145,34 @@ Lista elemei:
 
 **** Pálya és ûrhajó paraméterei
 
-Ha hiányzik, akkor a default értékek lesznek használva.
-
 #+BEGIN_SRC lisp
- (1000, 100, 50, 0)
+ (1000 100 50 0)
 #+END_SRC
 
 1. pályán összegyûjtendõ pontszám
 2. ûrhajó szerkezeti stabilitás kezdõértéke
-3. ûrhajó fegyvere energiaszint kezdõértéke
+3. ûrhajó fegyver energiaszint kezdõértéke
 4. ûrhajó pajzs energiaszint kezdõértéke
+
+
+** Ütközések
+
+| Ki/kivel | Fal | Aszt. | Pwru | Turr | Turr.löv | Ene |
+|----------+-----+-------+------+------+----------+-----|
+| Ját.     | +   | +     | +    | +    | +        | +   |
+| Löv.     | +   | +     |      | +    |          | +   |
+| Fal      |     |       |      |      | +        | +   |
+| Aszt.    |     |       |      |      | +        | +   |
+
+
+
+| Ki       | Collgroup | Collmask                 |
+|----------+-----------+--------------------------|
+| Ját.     |         1 | (+ 2 4 8 16 32 64 128)   |
+| Löv.     |         2 | (+ 4 8 32 128)           |
+| Fal      |         4 | 0                        |
+| Aszt.    |         8 | 0                        |
+| Pwru     |        16 | 0                        |
+| Turr     |        32 | 0                        |
+| Turr.löv |        64 | (+ 4 8)                  |
+| Ene      |       128 | (+ 4 8 32)               |

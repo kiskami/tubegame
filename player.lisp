@@ -7,7 +7,6 @@
 
 (in-package #:tubegame)
 
-(defconstant *ONEDEGREE* (/ pi 180.0))
 (defconstant *TURNSPEED* (* *ONEDEGREE* 14))
 (defconstant *ROLLSPEED* (* *ONEDEGREE* 12))
 (defconstant *FLYSPEED* 1)
@@ -18,7 +17,9 @@
 	(node (llgs-engine-cl:render-createscenenode *PLAYER-NODE-NAME*)))
     (llgs-engine-cl:render-attachmoveable node mesh)
     (llgs-engine-cl:render-setscenenodepos node 0.0 0.0 0.0)
-    (llgs-engine-cl:render-setscenenodescale node 0.3 0.3 0.3)
+    (llgs-engine-cl:render-setscenenodescale node 0.025 0.025 0.025)
+    (llgs-engine-cl:render-rotatescenenodez node (adjust-float (deg-to-rad 90)))
+    (llgs-engine-cl:render-rotatescenenodey node (adjust-float (deg-to-rad 90)))
     (make-playerdata
      :mesh mesh
      :node node
@@ -42,9 +43,6 @@
   (llgs-engine-cl:render-removechild
    (llgs-engine-cl:render-rootscenenode)
    (entitydata-node player)))
-
-(defun adjust-float (f)
-  (/ (truncate (* f 100000.0)) 100000.0))
 
 (defun player-rightturn (player relx elapsedt)
 ;  (format t "Player right~%")
