@@ -18,7 +18,19 @@
 
 (defparameter *main-camera* nil "Main game camera.")
 (defparameter *main-camera-node* nil "Main game camera scenenode")
+
 (defconstant *MAIN-CAMERA-SCENENODE-NAME* "main cam scenenode")
+(defconstant *MAIN-CAMERA-INITIAL-POS* '(-1.0 1.0 0.0))
+(defconstant *MAIN-CAMERA-INITIAL-LOOKAT* '(0.0 0.0 0.0))
+
+(defconstant *PLAYER-INITIAL-POS* '(0.0 0.0 0.0))
+(defconstant *PLAYER-NODE-SCALE* '(0.01 0.01 0.01))
+
+(defconstant *ONEDEGREE* (/ pi 180.0) "One degree in radians.")
+
+(defconstant *TURNSPEED* (* *ONEDEGREE* 14))
+(defconstant *ROLLSPEED* (* *ONEDEGREE* 12))
+(defconstant *FLYSPEED* 1)
 
 (defconstant *SKYBOX-MAT* "backgrounds/FirstSimpleStarField" "Skybox material name.")
 (defconstant *LEVEL1-FILE* "../data/level1.lisp" "Game level 1 file.")
@@ -30,10 +42,6 @@
 (defconstant *S-key* #x1F)
 (defconstant *A-key* #x1E)
 (defconstant *D-key* #x20)
-
-; ------------------------------------------------
-
-(defconstant *ONEDEGREE* (/ pi 180.0) "One degree in radians.")
 
 ; ------------------------------------------------
 
@@ -55,15 +63,35 @@
 (defconstant *ASTEROID2-MESH* "Asteroida2.mesh" "Asteroid 2 Ogre mesh resource name")
 (defconstant *ASTEROID3-MESH* "Asteroida3.mesh" "Asteroid 3 Ogre mesh resource name")
 
+(defconstant *ASTEROID1-SCALE* 0.2)
+(defconstant *ASTEROID2-SCALE* 0.12)
+(defconstant *ASTEROID3-SCALE* 0.05)
+
+; ------------------------------------------------
+
+(defconstant *PLAYER-PHYS-GRP* 1)
+(defconstant *PLAYER-PHYS-MASK* (+ 2 4 8 16 32 64 128))
+(defconstant *CUBE-PHYS-GRP* 4)
+(defconstant *CUBE-PHYS-MASK* 1)
+(defconstant *ASTEROIDA-PHYS-GRP* 8)
+(defconstant *ASTEROIDA-PHYS-MASK* 1)
+
+; ------------------------------------------------
+
+(defconstant *ASTEROID1-ENERGY* 100.0)
+(defconstant *ASTEROID2-ENERGY* 50.0)
+(defconstant *ASTEROID3-ENERGY* 20.0)
+
 ; ------------------------------------------------
 
 (defparameter *PHYSOBJMAP* (make-hash-table) "Physics objects pointer->entity map.")
+(defparameter *ENTITIES* '() "Game entities list.")
 
 (defstruct leveldata
   levelfile
   levelpointmargin
   playershieldenergystart	
-  playerstructintegritystart	
+  playerstructintegritystart
   playerweaponenergystart
   entities)
 
@@ -83,4 +111,7 @@
   activepowerups)
 
 (defstruct (asteroiddata (:include entitydata))
+  rotx
+  roty
+  rotz
   energy)

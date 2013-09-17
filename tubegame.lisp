@@ -41,9 +41,11 @@
     (setq *main-camera* (llgs-engine-cl:render-createcamera "main camera"))
     (setq *main-camera-node* (llgs-engine-cl:render-createscenenode *MAIN-CAMERA-SCENENODE-NAME*))
     (llgs-engine-cl:render-attachmoveable *main-camera-node* *main-camera*)
-    (llgs-engine-cl:render-setscenenodepos *main-camera-node* 0.0 5.0 5.0)
-    (llgs-engine-cl:render-cameralookat *main-camera* 0.0 0.0 0.0)
-    (llgs-engine-cl:render-setcameranearclipdist *main-camera* 0.2)
+    (llgs-engine-cl:render-setscenenodepos *main-camera-node* (first *MAIN-CAMERA-INITIAL-POS*) 
+					   (second *MAIN-CAMERA-INITIAL-POS*) (third *MAIN-CAMERA-INITIAL-POS*))
+    (llgs-engine-cl:render-cameralookat *main-camera* (first *MAIN-CAMERA-INITIAL-LOOKAT*) 
+					   (second *MAIN-CAMERA-INITIAL-LOOKAT*) (third *MAIN-CAMERA-INITIAL-LOOKAT*))
+    (llgs-engine-cl:render-setcameranearclipdist *main-camera* 0.01)
     (llgs-engine-cl:render-setcamerafarclipdist *main-camera* 15000.0)
     (llgs-engine-cl:render-setcameraasviewport *main-camera*)
     (llgs-engine-cl:render-setviewportbackground 0.5 1.0 0.5)
@@ -52,7 +54,16 @@
     (let ((light (llgs-engine-cl:render-createlight "mainlight")))
       (llgs-engine-cl:render-setlighttype light "POINT")
       (llgs-engine-cl:render-lightdiffcolor light 0.4 0.4 0.4)
-      (llgs-engine-cl:render-setlightpos light 0.0 100.0 100.0))))
+      (llgs-engine-cl:render-setlightpos light 100.0 -100.0 0.0))
+    (let ((light (llgs-engine-cl:render-createlight "mainlight2")))
+      (llgs-engine-cl:render-setlighttype light "POINT")
+      (llgs-engine-cl:render-lightdiffcolor light 0.4 0.4 0.4)
+      (llgs-engine-cl:render-setlightpos light 100.0 100.0 0.0))
+    )
+  (format t "Gamelabel...~A~%" (llgs-engine-cl:render-createsimpletext "st_gamelabel" *GAMELABEL* "DroidSans-Bold" 16 0.0 0.0 500.0 14.0))
+;  (llgs-engine-cl:render-simpletextcolor "st_gamelabel" 1.0 0.0 0.0)
+;  (llgs-engine-cl:render-simpletextshow "st_gamelabel")
+)
 
 (defun game_run ()
   "Call this to start and run the game."
@@ -66,30 +77,23 @@
     (setq maintimer (llgs-engine-cl:timer-create))
     ; gameloop
     (loop until *game-should-exit* do
-;	 (format t "0~%")
 	 (llgs-engine-cl:input-capture)
-;	 (format t "1~%")
 
 	 ; simple gamestate :)
 	 (if *in-game* 
 	     (one-game-frame deltatime)
 	     (one-startscreen-frame deltatime))
-;	 (format t "2~%")
 
 	 ; render one frame
 	 (llgs-engine-cl:render-oneframe)
-;	 (format t "3~%")
 	 (setq deltatime (/ (llgs-engine-cl:timer-getmicroseconds maintimer) 1000000.0))
-;	 (format t "4~%")
 
 	 (llgs-engine-cl:timer-reset maintimer)
-;	 (format t "5 - ~A~%" (llgs-engine-cl:input-keypressed *F11-KEY*))
 
 	 (if (llgs-engine-cl:input-keypressed *F11-KEY*) ; screenshot
 	     (llgs-engine-cl:render-screenshottofile "tubegame-screenshot-"))
 	 (if (llgs-engine-cl:input-keypressed *ESC-KEY*) ; end playing game
 	     (setq *game-should-exit* t))
-;	 (format t "6~%")
 	 ))
   (format t "Shutdown input...~A~%" (llgs-engine-cl:input-shutdown))
   (format t "Shutdown colldet...~A~%" (llgs-engine-cl:colldet-shutdown))

@@ -11,7 +11,7 @@
 	       (:file "globals" :depends-on ("package"))
 	       (:file "utils" :depends-on ("globals"))
 	       (:file "startdest" :depends-on ("package" "globals"))
-	       (:file "asteroid" :depends-on ("package" "globals"))
+	       (:file "asteroid" :depends-on ("package" "globals" "utils"))
 	       (:file "player" :depends-on ("package" "globals" "utils"))
 	       (:file "game" :depends-on ("package" "globals" "player" "startdest" "asteroid" "utils"))
 	       (:file "startscreen" :depends-on ("package"))

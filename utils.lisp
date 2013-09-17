@@ -22,3 +22,20 @@
 
 (defun del-from-physobjmap (ptr)
   (remhash ptr *PHYSOBJMAP*))
+
+(defun add-entity (ent)
+  (when ent (pushnew ent *ENTITIES*)))
+
+(defun remove-entity (ent)
+  (when ent (delete ent *ENTITIES*)))
+
+(defun gen-name (base &rest rest)
+  (let ((namestr (make-array '(0) :element-type 'base-char
+			    :fill-pointer 0 :adjustable t)))
+  (with-output-to-string (s namestr)
+    (format s "~A_~{~A_~}" (gensym base) rest)
+    namestr)))
+
+(defun get-rnd-coord (max)
+  (let ((r (random (* max 200))))
+    (adjust-float (/ (- r (* max 100)) 100.0))))
