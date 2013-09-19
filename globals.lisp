@@ -43,6 +43,10 @@
 (defconstant *A-key* #x1E)
 (defconstant *D-key* #x20)
 
+(defconstant *FPSDISPTIME* 2)
+(defconstant *COLLDET-DEBUGDRAWER-TIMEOUT* 1.5)
+(defconstant *COLLDET-TIMEOUT* 0.2 "After this time is collision detection run again.")
+
 ; ------------------------------------------------
 
 (defconstant *PLAYER-MESH* "Playership.mesh" "Player ship Ogre mesh resource name")
@@ -78,9 +82,21 @@
 
 ; ------------------------------------------------
 
+(defconstant *ASTEROID-BOUNCE-PENALTY* 5)
+(defconstant *CUBE-BOUNCE-PENALTY* 3)
+
+(defconstant *PLAYER-FIRE-TIMEOUT* 0.5)
+
 (defconstant *ASTEROID1-ENERGY* 100.0)
 (defconstant *ASTEROID2-ENERGY* 50.0)
 (defconstant *ASTEROID3-ENERGY* 20.0)
+
+(defconstant *BULLET-ENERGY* 5.0)
+(defconstant *BULLET-LIFETIME* 3.0)
+
+(defconstant *PLAYER-BULLET-W* 1.0)
+(defconstant *PLAYER-BULLET-H* 1.0)
+(defconstant *PLAYER-BULLET-MAT* "Examples/Flare")
 
 ; ------------------------------------------------
 
@@ -108,10 +124,25 @@
   integrity
   weaponenergy
   shieldenergy
-  activepowerups)
+  bouncetimer
+  bouncing
+  firetime
+  firing
+  movementdir
+  relx
+  rely
+  bulletbillbnode
+  bulletbillbset)
 
 (defstruct (asteroiddata (:include entitydata))
   rotx
   roty
   rotz
   energy)
+
+(defstruct (bulletdata (:include entitydata))
+  billboard
+  billset
+  energy
+  lifetime
+  flydist)

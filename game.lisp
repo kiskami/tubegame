@@ -11,9 +11,10 @@
 (defparameter *LEVEL* nil)
 (defparameter *PLAYER* nil)
 
-(defconstant *COLLDET-DEBUGDRAWER-TIMEOUT* 1.5)
 (defparameter *colldet-debugdrawer-time* 1.5)
 (defparameter *colldet-debugdrawer-enabled* nil)
+
+(defparameter *colldet-time* 0)
 
 (defun toggle-debugdrawer ()
   (when (<= *COLLDET-DEBUGDRAWER-TIMEOUT* *colldet-debugdrawer-time*)
@@ -48,36 +49,39 @@
 
 	     ; move player
 	     (if (llgs-engine-cl:input-keypressed *W-KEY*)
-		 (player-forward *PLAYER* elapsedt))
+		 (player-forward *PLAYER*))
 	     (if (llgs-engine-cl:input-keypressed *S-KEY*)
-		 (player-backward *PLAYER* elapsedt))
+		 (player-backward *PLAYER*))
 	     
 	     (let ((relx (llgs-engine-cl:input-mouserelx))
 		   (rely (llgs-engine-cl:input-mouserely)))
 	       (cond ((< 0 relx)
-		      (player-rightturn *PLAYER* relx elapsedt))
-		     ((> 0 relx)
-		      (player-leftturn *PLAYER* relx elapsedt)))
+		      (player-rightturn *PLAYER* relx))
+		     ((>= 0 relx)
+		      (player-leftturn *PLAYER* relx)))
 	       (cond ((< 0 rely)
-		      (player-downturn *PLAYER* rely elapsedt))
-		     ((> 0 rely)
-		      (player-upturn *PLAYER* rely elapsedt))))
+		      (player-downturn *PLAYER* rely))
+		     ((>= 0 rely)
+		      (player-upturn *PLAYER* rely))))
      	     ; fire
 	     (if (llgs-engine-cl:input-leftmousebutton)
 		 (player-fire *PLAYER* elapsedt))
 	     
-	     ; perform colldet - maybe not every frame?
-	     (let ((collnum (llgs-engine-cl:colldet-perform)))
-	       (when (< 0 collnum)
+	     (incf *colldet-time* elapsedt)
+	     ; perform colldet if needed
+	     (when (>= *colldet-time* *COLLDET-TIMEOUT*)
+	       (setf *colldet-time* 0)
+	       (let ((collnum (llgs-engine-cl:colldet-perform)))
+		 (when (< 0 collnum)
 ;	       (format t "There are ~A collisions atm.~%" collnum)
 	     ; update entities (and player) on colldet
-		 (dotimes (i collnum) 
-		   (let* ((collpair (llgs-engine-cl:colldet-getcollpair i))
-			  (entA (get-from-physobjmap (car collpair)))
-			  (entB (get-from-physobjmap (cdr collpair))))
-		     (if entA (funcall (entitydata-collfunc entA) entA entB))
-		     (if entB (funcall (entitydata-collfunc entB) entB entA))))))
-	     
+		   (dotimes (i collnum) 
+		     (let* ((collpair (llgs-engine-cl:colldet-getcollpair i))
+			    (entA (get-from-physobjmap (car collpair)))
+			    (entB (get-from-physobjmap (cdr collpair))))
+		       (if entA (funcall (entitydata-collfunc entA) entA entB))
+		       (if entB (funcall (entitydata-collfunc entB) entB entA)))))))
+
 	       ; update entities (and player)
 	     (map nil #'(lambda (e) 
 			  (funcall (entitydata-updatefunc e) e elapsedt))
@@ -171,7 +175,7 @@
 		 :mesh mesh
 		 :node node
 		 :physobj (llgs-engine-cl:colldet-addmeshgeom (first pos) (second pos) (third pos) 
-							      mesh 1000.0 *CUBE-PHYS-GRP* *CUBE-PHYS-MASK*)
+							      mesh *CUBE-PHYS-GRP* *CUBE-PHYS-MASK*)
 		 :updatefunc #'update-null
 		 :collfunc #'colldet-null)))
     (llgs-engine-cl:render-attachmoveable node mesh)
@@ -182,7 +186,6 @@
     (if (and roty (> roty 0)) (llgs-engine-cl:render-rotatescenenodey node (adjust-float (deg-to-rad roty))))
     (if (and rotz (> rotz 0)) (llgs-engine-cl:render-rotatescenenodez node (adjust-float (deg-to-rad rotz))))
     (llgs-engine-cl:colldet-syncolobjtoscenenode (entitydata-physobj cubeent) (entitydata-node cubeent))
-    (llgs-engine-cl:colldet-setdynamic (entitydata-physobj cubeent) 1)
     (add-to-physobjmap (entitydata-physobj cubeent) cubeent)
     cubeent))
 

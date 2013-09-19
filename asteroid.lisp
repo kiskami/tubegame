@@ -22,7 +22,7 @@
 		 :mesh mesh
 		 :node node
 		 :physobj (llgs-engine-cl:colldet-addmeshgeom (first pos) (second pos) (third pos)
-							      mesh (get-asteroid-energy type) *ASTEROIDA-PHYS-GRP* *ASTEROIDA-PHYS-MASK*)
+							      mesh *ASTEROIDA-PHYS-GRP* *ASTEROIDA-PHYS-MASK*)
 		 :updatefunc #'update-asteroid
 		 :collfunc #'collision-asteroid
 		 :rotx 0
@@ -36,7 +36,6 @@
     (llgs-engine-cl:render-setscenenodescale node (first scale) (second scale) (third scale))
     (llgs-engine-cl:colldet-syncolobjtoscenenode (asteroiddata-physobj astent) node)
     (llgs-engine-cl:colldet-setscale (asteroiddata-physobj astent) (first scale) (second scale) (third scale))
-    (llgs-engine-cl:colldet-setdynamic (asteroiddata-physobj astent) 1)
     (add-to-physobjmap (asteroiddata-physobj astent) astent)))
 
 (defun get-ast-meshfile-name (type)

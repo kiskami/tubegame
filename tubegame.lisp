@@ -17,25 +17,46 @@
 (defun disp-name-and-license ()
   (format t "~A~%~A~%~A~%" *GAMELABEL* *COPYRIGHT* *RIGHTS*))
 
-(defun parse-cmdargs ()
-  "TODO: parse command line parameters."
-  (list "plugins_d.cfg" "tubegame.cfg" "tubegame.log" 'directx "resources_d.cfg" ))
+(defun conv-to-int (str)
+  (parse-integer str :junk-allowed t))    
+
+(defun parse-cmdargs (args)
+  "Parse command line and return game initialization parameters."
+  (format t "parse-cmdargs: ~A~%" args)
+  (let ((pluginsfile "plugins_d.cfg")
+	(cfgfile "tubegame.cfg")
+	(logfile "tubegame.log")
+	(rendersys 'directx)
+	(resfile "resources_d.cfg")
+	(w 800) (h 600) (fullscreen 0)
+	(help nil) (debug t)
+	(wp (member "-w" args :test #'equal))
+	(hp (member "-h" args :test #'equal))
+	(fp (member "-f" args :test #'equal))
+	(?p (member "-?" args :test #'equal)))
+      (if (and wp (conv-to-int (second wp))) (setf w (conv-to-int (second wp))))
+      (if (and hp (conv-to-int (second hp))) (setf h (conv-to-int (second hp))))
+      (if fp (setf fullscreen 1))
+      (if ?p (setf help t))
+    (list pluginsfile cfgfile logfile rendersys resfile w h fullscreen help debug)))
 
 (defun debugmodep (params)
-  (if (equal "plugins_d.cfg" (first params))
-      t
-      nil))
-
+  (last params))
+ 
 (defun init-game (params)
   (let ((indebugmode (debugmodep params)))
-  (format t "Initializing game in ~A mode.~%" 
-	  (if indebugmode "DEBUG" "RELEASE"))
-  (format t "Loading llgs engine...~A~%" (llgs-engine-cl:load-llgsengine indebugmode))
+    (format t "Initializing game in ~A mode.~%" 
+	    (if indebugmode "DEBUG" "RELEASE"))
+    (format t "Loading llgs engine...~A~%" (llgs-engine-cl:load-llgsengine indebugmode))
     (format t "Initialize rendering...~A~%" 
 	    (llgs-engine-cl:render-init 
 	     (first params) (second params) (third params)
 	     (fourth params) (fifth params)))
-    (format t "Creating renderwindow...~A~%" (llgs-engine-cl:render-createrenderwindow "tubegame"))
+    (format t "Creating renderwindow (~Ax~A.~A)...~A~%" (sixth params) (seventh params) (eighth params)
+	    (llgs-engine-cl:render-createrenderwindow "tubegame" 
+						      :w (sixth params) 
+						      :h (seventh params)
+						      :fullscreen (eighth params)))
     (format t "Creating scenemanager...~A~%" (llgs-engine-cl:render-createscenemanager "INTERIOR" "tubescene"))
     (format t "Initializing camera and scene...~%")
     (setq *main-camera* (llgs-engine-cl:render-createcamera "main camera"))
@@ -60,17 +81,26 @@
       (llgs-engine-cl:render-lightdiffcolor light 0.4 0.4 0.4)
       (llgs-engine-cl:render-setlightpos light 100.0 100.0 0.0))
     )
-  (format t "Gamelabel...~A~%" (llgs-engine-cl:render-createsimpletext "st_gamelabel" *GAMELABEL* "DroidSans-Bold" 16 0.0 0.0 500.0 14.0))
+  (format t "Gamelabel...~A~%" (llgs-engine-cl:render-createsimpletext "st_gamelabel" *GAMELABEL* "DroidSans-Bold" 16 0.0 0.0 500.0 20.0))
 ;  (llgs-engine-cl:render-simpletextcolor "st_gamelabel" 1.0 0.0 0.0)
-;  (llgs-engine-cl:render-simpletextshow "st_gamelabel")
+  (llgs-engine-cl:render-simpletextshow "st_gamelabel")
 )
 
 (defun game_run ()
   "Call this to start and run the game."
   (disp-name-and-license)
-  (let ((params (parse-cmdargs))
+  (let ((params (parse-cmdargs CCL:*UNPROCESSED-COMMAND-LINE-ARGUMENTS*)) ; not working!?
 	(maintimer nil) ; measuring time between frames
-	(deltatime 0))
+	(deltatime 0)
+	(fpsdisptime 0))
+    (when (car (last params 2))
+      (format t "Command line params: -- [-w <res_width>] [-h <res_height> [-f] [-d] [-?]
+  --     - mandatory separator
+  -w -h  - renderwindow resolution - width, height in pixels
+  -f     - run on fullscreen
+  -d     - debug mode, always on atm
+  -?     - this help~%")
+      (return-from game_run))
     (init-game params)
     (format t "Initializing input...~A~%" (llgs-engine-cl:input-init))
     (format t "Initializing colldet...~A~%" (llgs-engine-cl:colldet-init))
@@ -94,7 +124,13 @@
 	     (llgs-engine-cl:render-screenshottofile "tubegame-screenshot-"))
 	 (if (llgs-engine-cl:input-keypressed *ESC-KEY*) ; end playing game
 	     (setq *game-should-exit* t))
-	 ))
+
+	 (incf fpsdisptime deltatime)
+	 (when (>= fpsdisptime *FPSDISPTIME*)
+	   (format t "FPS act: ~A, min: ~A, max: ~A~%Tris: ~A, batches: ~A~%"
+		   (llgs-engine-cl:render-actfps) (llgs-engine-cl:render-minfps) (llgs-engine-cl:render-maxfps) 
+		   (llgs-engine-cl:render-trianglecount) (llgs-engine-cl:render-batchcount))
+	   (setf fpsdisptime 0))))
   (format t "Shutdown input...~A~%" (llgs-engine-cl:input-shutdown))
   (format t "Shutdown colldet...~A~%" (llgs-engine-cl:colldet-shutdown))
   (format t "Shutdown renderer...~A~%" (llgs-engine-cl:render-shutdown))
