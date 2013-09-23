@@ -60,3 +60,22 @@
 (defun collision-asteroid (ast otherobj)
 ; ! collobj sync
   nil)
+
+(defun damage-asteroid (ast energy)
+  (cond ((<= (- (asteroiddata-energy ast) energy) 0)
+	 (setf (asteroiddata-energy ast) 0)
+	 (blow-asteroid ast))
+	(t 
+	 (format t "damaging asteroid energy ~A - ~A~%" (asteroiddata-energy ast) energy )
+	 (decf (asteroiddata-energy ast) energy))))
+
+(defun blow-asteroid (ast)
+  (format t "asteroid blowup ~A~%" ast)
+  (remove-entity ast)
+  (del-physobj (asteroiddata-physobj ast))
+  (del-from-physobjmap (asteroiddata-physobj ast))
+  (llgs-engine-cl:render-destroyscenenode (asteroiddata-node ast))
+  (add-entity (create-asteroid-explosion ast)))
+
+(defun create-asteroid-explosion (ast)
+  )

@@ -31,6 +31,7 @@
 (defconstant *TURNSPEED* (* *ONEDEGREE* 14))
 (defconstant *ROLLSPEED* (* *ONEDEGREE* 12))
 (defconstant *FLYSPEED* 1)
+(defconstant *BULLETSPEED* 1.75)
 
 (defconstant *SKYBOX-MAT* "backgrounds/FirstSimpleStarField" "Skybox material name.")
 (defconstant *LEVEL1-FILE* "../data/level1.lisp" "Game level 1 file.")
@@ -75,10 +76,12 @@
 
 (defconstant *PLAYER-PHYS-GRP* 1)
 (defconstant *PLAYER-PHYS-MASK* (+ 2 4 8 16 32 64 128))
+(defconstant *BULLET-PHYS-GRP* 2)
+(defconstant *BULLET-PHYS-MASK* (+ 4 8 32 128))
 (defconstant *CUBE-PHYS-GRP* 4)
-(defconstant *CUBE-PHYS-MASK* 1)
+(defconstant *CUBE-PHYS-MASK* (+ 1 2 64 128))
 (defconstant *ASTEROIDA-PHYS-GRP* 8)
-(defconstant *ASTEROIDA-PHYS-MASK* 1)
+(defconstant *ASTEROIDA-PHYS-MASK* (+ 1 2 64 128))
 
 ; ------------------------------------------------
 
@@ -92,15 +95,20 @@
 (defconstant *ASTEROID3-ENERGY* 20.0)
 
 (defconstant *BULLET-ENERGY* 5.0)
-(defconstant *BULLET-LIFETIME* 3.0)
+(defconstant *BULLET-MAXDIST* 5.0)
 
-(defconstant *PLAYER-BULLET-W* 1.0)
-(defconstant *PLAYER-BULLET-H* 1.0)
+(defconstant *PLAYER-BULLET-W* 0.2)
+(defconstant *PLAYER-BULLET-H* 0.2)
 (defconstant *PLAYER-BULLET-MAT* "Examples/Flare")
+
+(defconstant *BULLETBOX-HALFEXT1* 0.15 "Player bullet colldet box size")
+(defconstant *BULLETBOX-HALFEXT2* 0.15)
+(defconstant *BULLETBOX-HALFEXT3* 0.15)
 
 ; ------------------------------------------------
 
 (defparameter *PHYSOBJMAP* (make-hash-table) "Physics objects pointer->entity map.")
+(defparameter *PHYSOBJMAP-TRASH* nil)
 (defparameter *ENTITIES* '() "Game entities list.")
 
 (defstruct leveldata
@@ -127,7 +135,7 @@
   bouncetimer
   bouncing
   firetime
-  firing
+  canfire
   movementdir
   relx
   rely
@@ -145,4 +153,6 @@
   billset
   energy
   lifetime
-  flydist)
+  flydist
+  pos
+  flydir)

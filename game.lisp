@@ -82,6 +82,8 @@
 		       (if entA (funcall (entitydata-collfunc entA) entA entB))
 		       (if entB (funcall (entitydata-collfunc entB) entB entA)))))))
 
+	     (clean-colldet-trash)
+
 	       ; update entities (and player)
 	     (map nil #'(lambda (e) 
 			  (funcall (entitydata-updatefunc e) e elapsedt))

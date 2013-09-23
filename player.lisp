@@ -27,10 +27,13 @@
 		  :bouncetimer (llgs-engine-cl:timer-create)
 		  :bouncing nil
 		  :firetime 0
-		  :firing nil
+		  :canfire nil
+		  :movementdir nil
 		  :relx 0
 		  :rely 0
-		  :bulletbillbnode (llgs-engine-cl:render-createchildscenenode node "player_billboardset")
+		  :bulletbillbnode (llgs-engine-cl:render-createchildscenenode
+				    node
+				    "player_billboardset" :inheritori 0 :inheritscale 0)
 		  :bulletbillbset (llgs-engine-cl:billboardset-create))))
     (llgs-engine-cl:render-attachmoveable node mesh)
     (llgs-engine-cl:render-setscenenodepos node (first *PLAYER-INITIAL-POS*)
@@ -97,15 +100,15 @@
 	 (llgs-engine-cl:render-translatescenenode (entitydata-node player) 0.0 (adjust-float (* *FLYSPEED* elapsedt)) 0.0 t)
 	 (llgs-engine-cl:colldet-syncolobjtoscenenode (entitydata-physobj player) (entitydata-node player))))
 
-  (when (playerdata-firing player) 
-    (when (<= *PLAYER-FIRE-TIMEOUT* (playerdata-firetime player))
-      (format t "FIRE!~%")
-      (add-entity (apply #'create-bullet 'playerbullet (playerdata-bulletbillbset player) 
-			   (llgs-engine-cl:render-getscenenodepos (playerdata-node player))))
-      (setf (playerdata-firetime player) 0)
-      )
-    (setf (playerdata-firing player) nil)
-    )
+  (when (playerdata-canfire player)
+    (format t "FIRE!~%")
+    (let ((pos (llgs-engine-cl:render-getscenenodepos (playerdata-node player))))
+      (add-entity (apply #'create-bullet 'playerbullet 
+			 (list (playerdata-bulletbillbset player) 
+			 (first pos) (second pos) (third pos)
+			 (playerdata-node player)))))
+    (setf (playerdata-canfire player) nil)
+    (setf (playerdata-firetime player) 0))
 
   (setf (playerdata-relx player) 0)
   (setf (playerdata-rely player) 0)
@@ -137,7 +140,8 @@
 (defun player-fire (player elapsedt)
 ;  (format t "Player fire~%")
   (incf (playerdata-firetime player) elapsedt)
-  (setf (playerdata-firing player) t))
+  (when (<= *PLAYER-FIRE-TIMEOUT* (playerdata-firetime player))
+    (setf (playerdata-canfire player) t)))
 
 (defun player-forward (player)
   (setf (playerdata-movementdir player) 'forward))

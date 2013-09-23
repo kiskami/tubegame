@@ -23,11 +23,19 @@
 (defun del-from-physobjmap (ptr)
   (remhash ptr *PHYSOBJMAP*))
 
+(defun del-physobj (ptr)
+  (pushnew ptr *PHYSOBJMAP-TRASH*))
+
+(defun clean-colldet-trash ()
+  (dolist (o *PHYSOBJMAP-TRASH*)
+    (llgs-engine-cl:colldet-delcolobj o))
+  (setf *PHYSOBJMAP-TRASH* nil))
+
 (defun add-entity (ent)
   (when ent (pushnew ent *ENTITIES*)))
 
 (defun remove-entity (ent)
-  (when ent (delete ent *ENTITIES*)))
+  (when ent (setf *ENTITIES* (delete ent *ENTITIES*))))
 
 (defun gen-name (base &rest rest)
   (let ((namestr (make-array '(0) :element-type 'base-char
