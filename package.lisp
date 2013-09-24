@@ -9,4 +9,4 @@
 
 (defpackage #:tubegame
   (:use #:cl #:llgs-engine-cl)
-  (:export :game_run))
+  (:export :game-run))

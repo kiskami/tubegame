@@ -7,11 +7,13 @@
 
 (in-package #:tubegame)
 
-(defconstant *GAMELABEL* "tubegame is a simple game using llgs-engine-cl interface")
+(defconstant *GAMELABEL* "tubegame - a 3D space shoot'em up")
 (defconstant *COPYRIGHT* "Copyright (C) 2013 Kalman Kiss <kiskami@freemail.hu>, Hungary")
 (defconstant *RIGHTS* "All rights reserved.")
 
 ; ------------------------------------------------
+
+(defconstant *LABELCOLOR* '(0.24 0.61 0.83) "Skyblue color r,g,b")
 
 (defparameter *game-should-exit* nil "Game loop ends when t.")
 (defparameter *in-game* nil "Player is playing on a map when t, startscreen is displayed othervise.")
@@ -37,6 +39,7 @@
 (defconstant *LEVEL1-FILE* "../data/level1.lisp" "Game level 1 file.")
 
 (defconstant *ESC-KEY* 1 "OIS scan code for ECS key.")
+(defconstant *F10-KEY* #x56 "OIS scan code for F10 key.")
 (defconstant *F11-KEY* #x57 "OIS scan code for F11 key.")
 (defconstant *F12-KEY* #x58 "OIS scan code for F12 key.")
 (defconstant *W-key* #x11)
@@ -46,13 +49,16 @@
 
 (defconstant *FPSDISPTIME* 2)
 (defconstant *COLLDET-DEBUGDRAWER-TIMEOUT* 1.5)
-(defconstant *COLLDET-TIMEOUT* 0.2 "After this time is collision detection run again.")
+(defconstant *COLLDET-TIMEOUT* 0.1 "Collision detection frequency.")
+
+(defconstant *FLYMODE-SWITCH-TIMEOUT* 1.5)
 
 ; ------------------------------------------------
 
 (defconstant *PLAYER-MESH* "Playership.mesh" "Player ship Ogre mesh resource name")
 (defconstant *PLAYER-MESH-NAME* "playermesh")
 (defconstant *PLAYER-NODE-NAME* "playernode")
+(defconstant *PLAYER-PITCHNODE-NAME* "player_pitchnode")
 
 (defconstant *CUBE1-MESH* "Cube1.mesh" "Cube 1 Ogre mesh resource name")
 (defconstant *CUBE2-MESH* "Cube2.mesh" "Cube 2 Ogre mesh resource name")
@@ -90,20 +96,27 @@
 
 (defconstant *PLAYER-FIRE-TIMEOUT* 0.5)
 
-(defconstant *ASTEROID1-ENERGY* 100.0)
-(defconstant *ASTEROID2-ENERGY* 50.0)
-(defconstant *ASTEROID3-ENERGY* 20.0)
+(defconstant *ASTEROID1-ENERGY* 100)
+(defconstant *ASTEROID2-ENERGY* 60)
+(defconstant *ASTEROID3-ENERGY* 20)
 
-(defconstant *BULLET-ENERGY* 5.0)
-(defconstant *BULLET-MAXDIST* 5.0)
+(defconstant *BULLET-ENERGY* 20)
+(defconstant *BULLET-MAXDIST* 5)
 
 (defconstant *PLAYER-BULLET-W* 0.2)
 (defconstant *PLAYER-BULLET-H* 0.2)
 (defconstant *PLAYER-BULLET-MAT* "Examples/Flare")
 
-(defconstant *BULLETBOX-HALFEXT1* 0.15 "Player bullet colldet box size")
-(defconstant *BULLETBOX-HALFEXT2* 0.15)
-(defconstant *BULLETBOX-HALFEXT3* 0.15)
+(defconstant *BULLETBOX-HALFEXT1* 0.015 "Player bullet colldet box size")
+(defconstant *BULLETBOX-HALFEXT2* 0.015)
+(defconstant *BULLETBOX-HALFEXT3* 0.015)
+
+; ------------------------------------------------
+
+(defconstant *POINTSPANELID* "player_points")
+(defconstant *INTEGPANELID*  "player_integrity")
+(defconstant *WEAPONPANELID* "player_weapon_energy")
+(defconstant *SHIELDPANELID* "player_shield_energy")
 
 ; ------------------------------------------------
 
@@ -117,7 +130,7 @@
   playershieldenergystart	
   playerstructintegritystart
   playerweaponenergystart
-  entities)
+  startposlist)
 
 (defstruct entitydata
   type
@@ -135,12 +148,14 @@
   bouncetimer
   bouncing
   firetime
-  canfire
+  firing
   movementdir
   relx
   rely
   bulletbillbnode
-  bulletbillbset)
+  bulletbillbset
+  flymode
+  pitchnode)
 
 (defstruct (asteroiddata (:include entitydata))
   rotx
@@ -149,6 +164,7 @@
   energy)
 
 (defstruct (bulletdata (:include entitydata))
+  owner
   billboard
   billset
   energy

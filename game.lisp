@@ -16,12 +16,20 @@
 
 (defparameter *colldet-time* 0)
 
+(defparameter *flymode-switch-time* 1.5)
+
 (defun toggle-debugdrawer ()
   (when (<= *COLLDET-DEBUGDRAWER-TIMEOUT* *colldet-debugdrawer-time*)
-	(setq *colldet-debugdrawer-time* 0)
-	(setq *colldet-debugdrawer-enabled* (not *colldet-debugdrawer-enabled*))
-	(format t "Setting physics debugdraw to ~A~%" *colldet-debugdrawer-enabled*)
-	(llgs-engine-cl:colldet-setdebugdrawmode (if *colldet-debugdrawer-enabled* 10 0))))
+    (setq *colldet-debugdrawer-time* 0)
+    (setq *colldet-debugdrawer-enabled* (not *colldet-debugdrawer-enabled*))
+    (format t "Setting physics debugdraw to ~A~%" *colldet-debugdrawer-enabled*)
+    (llgs-engine-cl:colldet-setdebugdrawmode (if *colldet-debugdrawer-enabled* 10 0))))
+
+(defun toggle-flymode (player)
+  (when (<= *FLYMODE-SWITCH-TIMEOUT* *flymode-switch-time*)
+    (setq *flymode-switch-time* 0)
+    (format t "Switching fly mode.~%")
+    (player-toggle-flymode player)))
 
 (defun one-game-frame (elapsedt)
   "Update state and render one game playing frame."
@@ -46,6 +54,9 @@
 	     (incf *colldet-debugdrawer-time* elapsedt)
 	     (if (llgs-engine-cl:input-keypressed *F12-KEY*)
 		 (toggle-debugdrawer))
+	     (incf *flymode-switch-time* elapsedt)
+	     (if (llgs-engine-cl:input-keypressed *F10-KEY*)
+		 (toggle-flymode *PLAYER*))
 
 	     ; move player
 	     (if (llgs-engine-cl:input-keypressed *W-KEY*)
@@ -124,17 +135,18 @@
   "Process level data and create entities and scene objects."
   (let ((l (leveldata-levelfile level)))
   (loop for y from 0 to (1- (dimY l)) do 
-       (leveldata-yplane y (dimZ l) (dimX l) (nth y (second l))))))
+       (leveldata-yplane level y (dimZ l) (dimX l) (nth y (second l))))))
 
-(defun leveldata-yplane (y dimz dimx ypl)
+(defun leveldata-yplane (level y dimz dimx ypl)
   (loop for z from 0 to (1- dimz) do
-       (leveldata-row y z dimx (nth z ypl))))
+       (leveldata-row level y z dimx (nth z ypl))))
 
-(defun leveldata-row (y z dimx row)
+(defun leveldata-row (level y z dimx row)
   (loop for x from 0 to (1- dimx) do
-       (apply #'apply-rowdata x y z (nth x row))))
+;       (format t "leveldata-row: ~A ~A ~A ~A~%" x y z (nth x row))
+       (apply #'apply-rowdata level x y z (nth x row))))
 
-(defun apply-rowdata (x y z &optional cube &key (rotx 0) (roty 0) (rotz 0)
+(defun apply-rowdata (level x y z &optional cube &key (rotx 0) (roty 0) (rotz 0)
 		      sta cel
 		      (ast1 0) (ast2 0) (ast3 0) 
 		      (ss 0) (pa 0) (wea 0) (spe 0) 
@@ -142,7 +154,9 @@
 		      "Create game entities within 1 cube and add them to scene."
   (when cube
 	(add-entity (create-cube x y z cube rotx roty rotz))
-	(if sta (add-entity (create-startpoint x y z)))
+	(when sta 
+	  (add-entity (create-startpoint x y z))
+	  (pushnew (calc-cube-pos (adjust-float x) (adjust-float y) (adjust-float z)) (leveldata-startposlist level)))
 	(if cel (add-entity (create-endpoint x y z)))
 	(if (> ast1 0) (add-entity (create-asteroid x y z 'ast1 ast1)))
 	(if (> ast2 0) (add-entity (create-asteroid x y z 'ast2 ast2)))
@@ -168,7 +182,7 @@
 
 (defun create-cube (x y z cube rotx roty rotz)
   "Create cube mesh and scenenode, position it and rotate around its local x, then y, then z axis."
-  (format t "Creating cube ~A at(~A,~A,~A), rot(~A,~A,~A)~%" cube x y z rotx roty rotz)
+;  (format t "Creating cube ~A at(~A,~A,~A), rot(~A,~A,~A)~%" cube x y z rotx roty rotz)
   (let* ((pos (calc-cube-pos (adjust-float x) (adjust-float y) (adjust-float z)))
 	 (mesh (llgs-engine-cl:mesh-load (gen-name "cube" cube x y z) (get-cube-meshfile-name cube)))
 	 (node (llgs-engine-cl:render-createscenenode (gen-name "cube" x y z)))

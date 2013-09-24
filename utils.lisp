@@ -47,3 +47,10 @@
 (defun get-rnd-coord (max)
   (let ((r (random (* max 200))))
     (adjust-float (/ (- r (* max 100)) 100.0))))
+
+(defun make-hud-string (prefix num)
+  (let ((str (make-array '(0) :element-type 'base-char
+			    :fill-pointer 0 :adjustable t)))
+  (with-output-to-string (s str)
+    (format s "~A~A" prefix num)
+    str)))

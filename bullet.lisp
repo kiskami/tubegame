@@ -7,13 +7,14 @@
 
 (in-package #:tubegame)
 
-(defun create-bullet (type billbset x y z orinode)
+(defun create-bullet (type billbset x y z orinode owner)
   (let* ((startpos (calc-bullet-startpos x y z))
 	 (physobj (llgs-engine-cl:colldet-addbox (first startpos) (second startpos) (third startpos)
 						 *BULLETBOX-HALFEXT1* *BULLETBOX-HALFEXT2* *BULLETBOX-HALFEXT3*
 						 *BULLET-PHYS-GRP* *BULLET-PHYS-MASK*))
 	 (bulletent (make-bulletdata
 		     :type type
+		     :owner owner
 		     :physobj physobj
 		     :updatefunc #'bullet-update
 		     :collfunc #'bullet-collfunc
@@ -48,11 +49,13 @@
 (defun bullet-collfunc (bullet otherobj)
   (when otherobj
     (cond ((eq 'cube (entitydata-type otherobj))
-	   (format t "collision with cube, destorying~%")
-	   (blow-bullet bullet))
+;	   (format t "collision with cube, destroying~%")
+	   )
 	  ((eq 'asteroid (entitydata-type otherobj))
-	   (format t "collision with asteroid, damageing and destorying ~%")
-	   (damage-asteroid otherobj (bulletdata-energy bullet))))))
+;	   (format t "collision with asteroid, damageing and destroying ~%")
+	   (add-points-to-owner (bulletdata-owner bullet) (bulletdata-energy bullet))
+	   (damage-asteroid otherobj (bulletdata-energy bullet))))
+    (blow-bullet bullet)))
 
 (defun create-bullet-explosion (bullet)
   nil)
@@ -76,3 +79,6 @@
 					   (second pos) 
 					   (third pos)))
     ))
+
+(defun add-points-to-owner (player points)
+  (incf (playerdata-levelpoints player) points))

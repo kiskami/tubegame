@@ -5,6 +5,7 @@ To run it change directory to bin\ and run tubegame.exe.
 Enjoy!
 
 Source code is at http://code.google.com/p/tubegame/
+Github mirror at https://github.com/kiskami/tubegame
 
 tubegame
 Copyright (c) 2013 Kalman Kiss, Zalaegerszeg Hungary

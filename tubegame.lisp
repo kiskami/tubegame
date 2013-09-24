@@ -67,7 +67,7 @@
     (llgs-engine-cl:render-cameralookat *main-camera* (first *MAIN-CAMERA-INITIAL-LOOKAT*) 
 					   (second *MAIN-CAMERA-INITIAL-LOOKAT*) (third *MAIN-CAMERA-INITIAL-LOOKAT*))
     (llgs-engine-cl:render-setcameranearclipdist *main-camera* 0.01)
-    (llgs-engine-cl:render-setcamerafarclipdist *main-camera* 15000.0)
+    (llgs-engine-cl:render-setcamerafarclipdist *main-camera* 10000.0)
     (llgs-engine-cl:render-setcameraasviewport *main-camera*)
     (llgs-engine-cl:render-setviewportbackground 0.5 1.0 0.5)
     (llgs-engine-cl:render-setambientlight 0.15 0.15 0.15)
@@ -81,12 +81,19 @@
       (llgs-engine-cl:render-lightdiffcolor light 0.4 0.4 0.4)
       (llgs-engine-cl:render-setlightpos light 100.0 100.0 0.0))
     )
-  (format t "Gamelabel...~A~%" (llgs-engine-cl:render-createsimpletext "st_gamelabel" *GAMELABEL* "DroidSans-Bold" 16 0.0 0.0 500.0 20.0))
-;  (llgs-engine-cl:render-simpletextcolor "st_gamelabel" 1.0 0.0 0.0)
-  (llgs-engine-cl:render-simpletextshow "st_gamelabel")
+  (format t "Gamelabel...~A~%" 
+	  (llgs-engine-cl:render-createsimpletext "st_gamelabel" *GAMELABEL*
+						  "DroidSans-Bold" 
+						  0.06 0.01 0.90 1.0 1.0 0))
+  (llgs-engine-cl:render-simpletextcolor "st_gamelabel" 
+					 (first *LABELCOLOR*) (second *LABELCOLOR*) (third *LABELCOLOR*))
+  (llgs-engine-cl:render-createsimpletext "st_copylabel" *COPYRIGHT*
+					  "DroidSans" 
+					  0.03 0.01 0.96 1.0 1.0 0)
+;  (llgs-engine-cl:render-simpletextshow "st_gamelabel")
 )
 
-(defun game_run ()
+(defun game-run ()
   "Call this to start and run the game."
   (disp-name-and-license)
   (let ((params (parse-cmdargs CCL:*UNPROCESSED-COMMAND-LINE-ARGUMENTS*)) ; not working!?
@@ -100,7 +107,7 @@
   -f     - run on fullscreen
   -d     - debug mode, always on atm
   -?     - this help~%")
-      (return-from game_run))
+      (return-from game-run))
     (init-game params)
     (format t "Initializing input...~A~%" (llgs-engine-cl:input-init))
     (format t "Initializing colldet...~A~%" (llgs-engine-cl:colldet-init))

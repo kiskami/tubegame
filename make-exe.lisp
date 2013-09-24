@@ -15,4 +15,4 @@
 (defparameter name #+unix "tubegame" #+windows "tubegame.exe")
 
 ;;; Only Clozure CL (on Windows) is supported atm
-#+ccl (save-application name :toplevel-function #'tubegame:game_run :prepend-kernel t)
+#+ccl (save-application name :toplevel-function #'tubegame:game-run :prepend-kernel t)
