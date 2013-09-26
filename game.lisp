@@ -36,8 +36,10 @@
   (cond ((equal *GAME-STATE* 'none)
 	 ; first time or a new try?
 	 (setf *ENTITIES* nil)
+
 	 (if (not *LEVEL*) (setq *LEVEL* (load-level1)) (reset-level *LEVEL*))
 	 (if (not *PLAYER*) (setq *PLAYER* (load-player *LEVEL*)) (reset-player *PLAYER* *LEVEL*))
+	 (if (not *EXPBILLBSET*) (init-explosions (playerdata-node *PLAYER*)) (reset-explosions))
 
 	 (show-level-and-player *LEVEL* *PLAYER*)
 

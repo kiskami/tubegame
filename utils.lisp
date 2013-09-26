@@ -54,3 +54,24 @@
   (with-output-to-string (s str)
     (format s "~A~A" prefix num)
     str)))
+
+(defun vec3+ (v1 v2)
+  (list (+ (first v1) (first v2))
+	(+ (second v1) (second v2))
+	(+ (third v1) (third v2))))
+
+(defun vec3_rev (v)
+  (list (- (first v)) (- (second v)) (- (third v))))
+ 
+(defun vec3- (v1 v2)
+  (vec3+ v1 (vec3_rev v2)))
+
+(defun vec3* (v n)
+  (list (* (first v) n) (* (second v) n) (* (third v) n)))
+
+(defun vec3_normalize (v)
+  (let ((l (sqrt (+ (* (first v) (first v))
+		    (* (second v) (second v))
+		    (* (third v) (third v))))))
+    (list (/ (first v) l) (/ (second v) l) (/ (third v) l))))
+

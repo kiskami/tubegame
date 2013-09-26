@@ -35,7 +35,7 @@
 		  :rely 0
 		  :bulletbillbnode (llgs-engine-cl:render-createchildscenenode
 				    node
-				    "player_billboardset" :inheritori 0 :inheritscale 0)
+				    "player_billboardset" :inheritori 1 :inheritscale 0)
 		  :bulletbillbset (llgs-engine-cl:billboardset-create)
 		  :flymode nil)))
     (llgs-engine-cl:render-attachmoveable pitchnode mesh)

@@ -57,7 +57,9 @@
 						      :w (sixth params) 
 						      :h (seventh params)
 						      :fullscreen (eighth params)))
-    (format t "Creating scenemanager...~A~%" (llgs-engine-cl:render-createscenemanager "INTERIOR" "tubescene"))
+    (format t "Creating scenemanager...~A~%" (llgs-engine-cl:render-createscenemanager 
+					      "INTERIOR" 
+					      "tubescene"))
     (format t "Initializing camera and scene...~%")
     (setq *main-camera* (llgs-engine-cl:render-createcamera "main camera"))
     (setq *main-camera-node* (llgs-engine-cl:render-createscenenode *MAIN-CAMERA-SCENENODE-NAME*))

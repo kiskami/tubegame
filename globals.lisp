@@ -38,7 +38,7 @@
 (defconstant *SKYBOX-MAT* "backgrounds/FirstSimpleStarField" "Skybox material name.")
 (defconstant *LEVEL1-FILE* "../data/level1.lisp" "Game level 1 file.")
 
-(defconstant *ESC-KEY* 1 "OIS scan code for ECS key.")
+(defconstant *ESC-KEY* 1 "OIS scan code for ESC key.")
 (defconstant *F10-KEY* #x56 "OIS scan code for F10 key.")
 (defconstant *F11-KEY* #x57 "OIS scan code for F11 key.")
 (defconstant *F12-KEY* #x58 "OIS scan code for F12 key.")
@@ -49,7 +49,7 @@
 
 (defconstant *FPSDISPTIME* 2)
 (defconstant *COLLDET-DEBUGDRAWER-TIMEOUT* 1.5)
-(defconstant *COLLDET-TIMEOUT* 0.1 "Collision detection frequency.")
+(defconstant *COLLDET-TIMEOUT* 0.05 "Collision detection frequency.")
 
 (defconstant *FLYMODE-SWITCH-TIMEOUT* 1.5)
 
@@ -77,6 +77,13 @@
 (defconstant *ASTEROID1-SCALE* 0.2)
 (defconstant *ASTEROID2-SCALE* 0.12)
 (defconstant *ASTEROID3-SCALE* 0.05)
+
+(defconstant *EXPLOSION-AST1-W* 1.0)
+(defconstant *EXPLOSION-AST1-H* 1.0)
+(defconstant *EXPLOSION-AST2-W* 0.5)
+(defconstant *EXPLOSION-AST2-H* 0.5)
+(defconstant *EXPLOSION-AST3-W* 0.2)
+(defconstant *EXPLOSION-AST3-H* 0.2)
 
 ; ------------------------------------------------
 
@@ -111,6 +118,15 @@
 (defconstant *BULLETBOX-HALFEXT2* 0.015)
 (defconstant *BULLETBOX-HALFEXT3* 0.015)
 
+(defconstant *EXPLOSION-MAT* "Explosion33")
+(defconstant *EXPBILLSET-STACKS* 8)
+(defconstant *EXPBILLSET-SLICES* 8)
+(defconstant *EXPLOSION-LIFETIME* 2)
+
+(defconstant *AST1-EXPLOSION-DIST* 0.0)
+(defconstant *AST2-EXPLOSION-DIST* 0.0)
+(defconstant *AST3-EXPLOSION-DIST* 0.0)
+
 ; ------------------------------------------------
 
 (defconstant *POINTSPANELID* "player_points")
@@ -123,6 +139,9 @@
 (defparameter *PHYSOBJMAP* (make-hash-table) "Physics objects pointer->entity map.")
 (defparameter *PHYSOBJMAP-TRASH* nil)
 (defparameter *ENTITIES* '() "Game entities list.")
+
+(defparameter *EXPBILLBSET* nil "Explosions BillboardSet pointer")
+(defparameter *EXPBILLBSETNODE* nil)
 
 (defstruct leveldata
   levelfile
@@ -158,6 +177,7 @@
   pitchnode)
 
 (defstruct (asteroiddata (:include entitydata))
+  subtype
   rotx
   roty
   rotz
@@ -172,3 +192,9 @@
   flydist
   pos
   flydir)
+
+(defstruct (explosiondata (:include entitydata))
+  billboard
+  lifetime
+  texindex
+  pos)

@@ -19,6 +19,7 @@
 		   (+ (* 2 z) (get-rnd-coord 0.62))))
 	(astent (make-asteroiddata
 		 :type 'asteroid
+		 :subtype type
 		 :mesh mesh
 		 :node node
 		 :physobj (llgs-engine-cl:colldet-addmeshgeom (first pos) (second pos) (third pos)
@@ -74,8 +75,9 @@
   (remove-entity ast)
   (del-physobj (asteroiddata-physobj ast))
   (del-from-physobjmap (asteroiddata-physobj ast))
-  (llgs-engine-cl:render-destroyscenenode (asteroiddata-node ast))
-  (add-entity (create-asteroid-explosion ast)))
+  (add-entity (create-asteroid-explosion ast)) 
+  (llgs-engine-cl:render-destroyscenenode (asteroiddata-node ast)))
 
 (defun create-asteroid-explosion (ast)
-  )
+  (create-explosion (llgs-engine-cl:render-getscenenodepos (asteroiddata-node ast))
+		    (asteroiddata-subtype ast)))

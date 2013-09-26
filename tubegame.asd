@@ -11,9 +11,16 @@
 	       (:file "globals" :depends-on ("package"))
 	       (:file "utils" :depends-on ("globals"))
 	       (:file "startdest" :depends-on ("package" "globals"))
-	       (:file "asteroid" :depends-on ("package" "globals" "utils"))
+	       (:file "explosion" :depends-on ("package" "globals" "utils"))
+	       (:file "asteroid" :depends-on ("package" "globals" "utils" 
+							"explosion"))
 	       (:file "bullet" :depends-on ("package" "globals" "utils"))
-	       (:file "player" :depends-on ("package" "globals" "utils" "bullet"))
-	       (:file "game" :depends-on ("package" "globals" "player" "startdest" "asteroid" "utils"))
+	       (:file "player" :depends-on ("package" "globals" "utils" 
+						      "bullet" "explosion"))
+	       (:file "game" :depends-on ("package" "globals" "utils" 
+						    "player" 
+						    "startdest" 
+						    "asteroid" 
+						    "explosion"))
 	       (:file "startscreen" :depends-on ("package"))
                (:file "tubegame" :depends-on ("package" "globals" "game" "startscreen"))))
