@@ -40,6 +40,10 @@ button shoots, ESC quits, screenshot with F11.")
 (defconstant *GAME-OVER* "G A M E  O V E R")
 (defconstant *GAME-OVER-TIMEOUT* 5.0)
 
+(defconstant *CONGRAT-MSG* "Congratulations!")
+(defconstant *DESTROYED-POINTS-MSG1* "You destroyed ~A of energy of stuff")
+(defconstant *DESTROYED-POINTS-MSG2* "on this level in ~A mins and ~A secs.")
+
 ; ------------------------------------------------
 
 (defconstant *LABELCOLOR* '(0.24 0.61 0.83) "Skyblue color r,g,b")
@@ -210,6 +214,7 @@ button shoots, ESC quits, screenshot with F11.")
 
 (defstruct (playerdata (:include entitydata))
   levelpoints
+  leveldonepoints
   integrity
   startweaponenergy
   weaponenergy
@@ -226,7 +231,10 @@ button shoots, ESC quits, screenshot with F11.")
   bulletbillbset
   flymode
   pitchnode
-  playerrot)
+  playerrot
+  speed
+  difficulty
+  playtimer)
 
 (defstruct (asteroiddata (:include entitydata))
   subtype

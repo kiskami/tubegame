@@ -55,6 +55,14 @@
     (format s "~A~A" prefix num)
     str)))
 
+(defun make-formatted-string (formatstr &rest rest)
+  (let ((str (make-array '(0) :element-type 'base-char
+			    :fill-pointer 0 :adjustable t)))
+  (with-output-to-string (s str)
+    (destructuring-bind (a b &rest c) rest
+      (format s formatstr a b c))
+    str)))
+
 (defun vec3+ (v1 v2)
   (list (+ (first v1) (first v2))
 	(+ (second v1) (second v2))

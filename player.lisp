@@ -21,6 +21,7 @@
 					       (second *PLAYER-INITIAL-POS*) (third *PLAYER-INITIAL-POS*)
 					       mesh *PLAYER-PHYS-GRP* *PLAYER-PHYS-MASK*)
 		  :levelpoints 0
+		  :leveldonepoints (leveldata-levelpointmargin level)
 		  :integrity (leveldata-playerstructintegritystart level)
 		  :startweaponenergy (leveldata-playerweaponenergystart level)
 		  :weaponenergy (leveldata-playerweaponenergystart level)
@@ -40,7 +41,10 @@
 				    "player_billboardset" :inheritori 1 :inheritscale 0)
 		  :bulletbillbset (llgs-engine-cl:billboardset-create)
 		  :flymode nil
-		  :playerrot 0)))
+		  :playerrot 0
+		  :speed *FLYSPEED*
+		  :difficulty 0
+		  :playtimer 0)))
     (llgs-engine-cl:render-attachmoveable pitchnode mesh)
     (llgs-engine-cl:render-attachmoveable (playerdata-bulletbillbnode plyent) (playerdata-bulletbillbset plyent))
     (let ((startpos (first (leveldata-startposlist level))))
@@ -85,11 +89,11 @@
   (hide-hud))
 
 (defun go-forward (player elapsedt)
-  (llgs-engine-cl:render-translatescenenode (entitydata-node player) 0.0 (adjust-float (* -1.0 *FLYSPEED* elapsedt)) 0.0 t)
+  (llgs-engine-cl:render-translatescenenode (entitydata-node player) 0.0 (adjust-float (* -1.0 (playerdata-speed player) elapsedt)) 0.0 t)
   (llgs-engine-cl:colldet-syncolobjtoscenenode (entitydata-physobj player) (entitydata-node player)))
 
 (defun go-backward (player elapsedt)
-  (llgs-engine-cl:render-translatescenenode (entitydata-node player) 0.0 (adjust-float (* *FLYSPEED* elapsedt)) 0.0 t)
+  (llgs-engine-cl:render-translatescenenode (entitydata-node player) 0.0 (adjust-float (* (playerdata-speed player) elapsedt)) 0.0 t)
   (llgs-engine-cl:colldet-syncolobjtoscenenode (entitydata-physobj player) (entitydata-node player)))
 
 (defun handle-turn (player elapsedt)
@@ -179,16 +183,34 @@
 (defun update-player (player elapsedt)
   "Update player state according to input and collision events"
 
+  (incf (playerdata-playtimer player) elapsedt)
+
   (handle-turn player elapsedt)
 
   (handle-flymode player elapsedt)
 
   (handle-firing player elapsedt)
 
+  (raise-gamedifficulty player)
+
   (update-points-hud player)
   (setf (playerdata-relx player) 0)
   (setf (playerdata-rely player) 0)
   )
+
+(defun raise-gamedifficulty (player)
+  (when (and (= (playerdata-difficulty player) 0)
+	   (>= (playerdata-levelpoints player) 
+	       (* (playerdata-leveldonepoints player) 0.6)))
+    (setf (playerdata-speed player) (* (playerdata-speed player) 1.2))
+    (incf (playerdata-difficulty player))
+    (format t "Raised game difficulty to ~A.~%" (playerdata-difficulty player)))
+  (when (and (= (playerdata-difficulty player) 1)
+	   (>= (playerdata-levelpoints player) 
+	       (* (playerdata-leveldonepoints player) 0.8)))
+    (setf (playerdata-speed player) (* (playerdata-speed player) 1.2))
+    (incf (playerdata-difficulty player))
+    (format t "Raised game difficulty to ~A.~%" (playerdata-difficulty player))))
 
 (defun player-reset-collinfo (player)
     (setf (playerdata-bouncing player) nil))
@@ -303,7 +325,6 @@
 (defun hide-hud ())
 
 (defun game-over (player)
-  (declare (ignore player))
 ;  (format t "*** GAME OVER ***~%")
   (llgs-engine-cl:render-createsimpletext "game_over" *GAME-OVER* 
 					  "DroidSans-Bold"
@@ -311,6 +332,25 @@
   (llgs-engine-cl:render-createsimpletext "st_pressany2" *PRESS-ANY-KEY2*
 					  "DroidSans-Bold"
 					  0.05 0.33 0.5 1.0 1.0 0)
+  ; level done?
+  (when (<= (playerdata-leveldonepoints player) (playerdata-levelpoints player))
+    (llgs-engine-cl:render-createsimpletext "st_congrats" *CONGRAT-MSG*
+					    "DroidSans-Bold"
+					    0.10 0.25 0.56 1.0 1.0 0)
+    (llgs-engine-cl:render-simpletextcolor "st_congrats" 0.851 0.644 0.125))
+  (llgs-engine-cl:render-createsimpletext "st_destroyedmsg1"
+					  (make-formatted-string *DESTROYED-POINTS-MSG1* 
+								 (playerdata-levelpoints player) nil)
+					  "DroidSans" 0.05 0.22 0.65 1.0 1.0 0)
+  (let ((mins (floor (/ (playerdata-playtimer player) 60)))
+	(secs (floor (mod (playerdata-playtimer player) 60))))
+    (format t "Level done in ~A mins and ~A secs (~A).~%" mins secs
+	    (playerdata-playtimer player))
+    (llgs-engine-cl:render-createsimpletext "st_destroyedmsg2"
+					    (make-formatted-string *DESTROYED-POINTS-MSG2* 
+								   mins secs)
+					    "DroidSans" 0.05 0.22 0.70 1.0 1.0 0))
+
   (setf *ENTITIES* nil)
   (setf *PHYSOBJMAP* (make-hash-table))
   (add-entity (make-explosiondata
