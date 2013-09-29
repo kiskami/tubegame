@@ -55,12 +55,10 @@
 	(t (list *ASTEROID1-SCALE* *ASTEROID1-SCALE* *ASTEROID1-SCALE*))))
 
 (defun update-asteroid (ast elapsedt)
-; ! collobj sync
-  nil)
+  (declare (ignore ast elapsedt)))
 
 (defun collision-asteroid (ast otherobj)
-; ! collobj sync
-  nil)
+  (declare (ignore ast otherobj)))
 
 (defun damage-asteroid (ast energy)
   (decf (asteroiddata-energy ast) energy)
@@ -68,7 +66,8 @@
 	 (setf (asteroiddata-energy ast) 0)
 	 (blow-asteroid ast))
 	(t 
-	 (format t "damaged asteroid with energy ~A - ~A~%" (asteroiddata-energy ast) energy ))))
+;	 (format t "damaged asteroid with energy ~A - ~A~%" (asteroiddata-energy ast) energy )
+	 nil)))
 
 (defun blow-asteroid (ast)
 ;  (format t "asteroid blowup ~A~%" ast)

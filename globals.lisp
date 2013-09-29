@@ -56,14 +56,16 @@ button shoots, ESC quits, screenshot with F11.")
 
 (defconstant *STARTSCREEN-CAMROT-SPEED* 0.005)
 
-(defconstant *PLAYER-INITIAL-POS* '(0.0 0.0 0.0))
-(defconstant *PLAYER-NODE-SCALE* '(0.01 0.01 0.01))
-
 (defconstant *ONEDEGREE* (/ pi 180.0) "One degree in radians.")
 
-(defconstant *TURNSPEED* (* *ONEDEGREE* 14))
-(defconstant *ROLLSPEED* (* *ONEDEGREE* 12))
-(defconstant *FLYSPEED* 0.5)
+(defconstant *PLAYER-INITIAL-POS* '(0.0 0.0 0.0))
+(defconstant *PLAYER-NODE-SCALE* '(0.01 0.01 0.01))
+(defconstant *PLAYER-MAX-ROT* (* 45 *ONEDEGREE*))
+(defconstant *PlAYER-BACK-ROT-SPEED* 3.2)
+
+(defconstant *TURNSPEED* (* *ONEDEGREE* 15.0))
+(defconstant *ROLLSPEED* (* *ONEDEGREE* 15.0))
+(defconstant *FLYSPEED* 0.6)
 (defconstant *BULLETSPEED* 1.75)
 
 (defconstant *SKYBOX-MAT* "backgrounds/FirstSimpleStarField" "Skybox material name.")
@@ -143,8 +145,8 @@ button shoots, ESC quits, screenshot with F11.")
 (defconstant *ASTEROID-BOUNCE-PENALTY* 5)
 (defconstant *CUBE-BOUNCE-PENALTY* 3)
 
-(defconstant *PLAYER-BOUNCE-TIMEOUT* 1.0)
-(defconstant *PLAYER-FIRE-TIMEOUT* 0.5)
+(defconstant *PLAYER-BOUNCE-TIMEOUT* 0.8)
+(defconstant *PLAYER-FIRE-TIMEOUT* 0.6)
 
 (defconstant *ASTEROID1-ENERGY* 100)
 (defconstant *ASTEROID2-ENERGY* 60)
@@ -164,7 +166,7 @@ button shoots, ESC quits, screenshot with F11.")
 (defconstant *EXPLOSION-MAT* "Explosion33")
 (defconstant *EXPBILLSET-STACKS* 8)
 (defconstant *EXPBILLSET-SLICES* 8)
-(defconstant *EXPLOSION-LIFETIME* 2)
+(defconstant *EXPLOSION-LIFETIME* 1.2)
 
 (defconstant *AST1-EXPLOSION-DIST* 0.0)
 (defconstant *AST2-EXPLOSION-DIST* 0.0)
@@ -178,6 +180,9 @@ button shoots, ESC quits, screenshot with F11.")
 (defconstant *SHIELDPANELID* "player_shield_energy")
 (defconstant *RETICLEPANELID* "player_reticle")
 
+(defconstant *GREEN-COLOR* '(0.0 1.0 0.0))
+(defconstant *ORANGE-COLOR* '(1.0 0.546 0.0))
+(defconstant *RED-COLOR* '(1.0 0.0 0.0))
 ; ------------------------------------------------
 
 (defparameter *PHYSOBJMAP* nil "Physics objects pointer->entity map.")
@@ -211,6 +216,7 @@ button shoots, ESC quits, screenshot with F11.")
   shieldenergy
   bouncetime
   bouncing
+  bouncepenalty
   firetime
   firing
   movementdir
@@ -219,7 +225,8 @@ button shoots, ESC quits, screenshot with F11.")
   bulletbillbnode
   bulletbillbset
   flymode
-  pitchnode)
+  pitchnode
+  playerrot)
 
 (defstruct (asteroiddata (:include entitydata))
   subtype

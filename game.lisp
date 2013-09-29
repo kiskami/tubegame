@@ -45,7 +45,6 @@
 	 (show-level-and-player *LEVEL* *PLAYER*)
 
 	 (setq *GAME-STATE* 'loaded)
-;	 (break)
 	 )
 	(t ;running
 	 ; ESC pressed?
@@ -82,9 +81,10 @@
 		 (player-fire *PLAYER* elapsedt))
 	     
 	     (incf *colldet-time* elapsedt)
-	     ; perform colldet if needed
+	     ; perform colldet and entity update
 	     (when (>= *colldet-time* *COLLDET-TIMEOUT*)
 	       (setf *colldet-time* 0)
+	       (player-reset-collinfo *PLAYER*)
 	       (let ((collnum (llgs-engine-cl:colldet-perform)))
 		 (when (< 0 collnum)
 ;	       (format t "There are ~A collisions atm.~%" collnum)
@@ -96,12 +96,12 @@
 		       (if entA (funcall (entitydata-collfunc entA) entA entB))
 		       (if entB (funcall (entitydata-collfunc entB) entB entA)))))))
 
-	     (clean-colldet-trash)
+	       (clean-colldet-trash)
 
 	       ; update entities (and player)
-	     (map nil #'(lambda (e) 
-			  (funcall (entitydata-updatefunc e) e elapsedt))
-		  *ENTITIES*)
+	       (map nil #'(lambda (e) 
+			    (funcall (entitydata-updatefunc e) e elapsedt))
+		    *ENTITIES*)
 	     )))))
 
 (defun load-level1 ()
@@ -290,6 +290,7 @@
   nil)
 
 (defun cel-colldet (cel otherobj)
+  (declare (ignore cel))
 ;  (format t "cel-colldet: collision with ~A~%" otherobj)
   (game-over otherobj))
 

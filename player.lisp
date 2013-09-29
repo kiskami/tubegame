@@ -29,6 +29,7 @@
 		  :collfunc #'collision-player
 		  :bouncetime 0
 		  :bouncing nil
+		  :bouncepenalty 0
 		  :firetime *PLAYER-FIRE-TIMEOUT*
 		  :firing nil
 		  :movementdir 'forward
@@ -38,7 +39,8 @@
 				    node
 				    "player_billboardset" :inheritori 1 :inheritscale 0)
 		  :bulletbillbset (llgs-engine-cl:billboardset-create)
-		  :flymode nil)))
+		  :flymode nil
+		  :playerrot 0)))
     (llgs-engine-cl:render-attachmoveable pitchnode mesh)
     (llgs-engine-cl:render-attachmoveable (playerdata-bulletbillbnode plyent) (playerdata-bulletbillbset plyent))
     (let ((startpos (first (leveldata-startposlist level))))
@@ -64,8 +66,6 @@
   (setf (playerdata-shieldenergy player) (leveldata-playershieldenergystart level)))
 
 (defun show-player (player camnode)
-;  (llgs-engine-cl:render-rotatescenenodez camnode (adjust-float (deg-to-rad 90)))
-;  (llgs-engine-cl:render-rotatescenenodey camnode (adjust-float (deg-to-rad 90)))
   (llgs-engine-cl:render-setscenenodepos camnode 0.0 0.3 0.1)
   (llgs-engine-cl:render-addchild (entitydata-node player) camnode)
   (llgs-engine-cl:render-cameralookat *main-camera* (+ 2.0 (first *PLAYER-INITIAL-POS*))
@@ -93,20 +93,31 @@
   (llgs-engine-cl:colldet-syncolobjtoscenenode (entitydata-physobj player) (entitydata-node player)))
 
 (defun handle-turn (player elapsedt)
-  (when (not (= 0 (playerdata-relx player)))
-    (let ((rad (* -1.0 (playerdata-relx player) (adjust-float (* *TURNSPEED* elapsedt)))))
-      (llgs-engine-cl:render-rotatescenenodez (entitydata-node player) rad)
-      (llgs-engine-cl:render-rotatescenenodey (playerdata-pitchnode player) rad)
-      (llgs-engine-cl:colldet-syncolobjtoscenenode (entitydata-physobj player) (entitydata-node player))))
+  (let ((rad (* -1.0 (playerdata-relx player) (adjust-float (* *TURNSPEED* elapsedt)))))
+    (cond ((not (zerop (playerdata-relx player)))
+	   (llgs-engine-cl:render-rotatescenenodez (entitydata-node player) rad)
+	   (cond ((<= *PLAYER-MAX-ROT* (+ rad (playerdata-playerrot player)))
+		  (setf rad (- *PLAYER-MAX-ROT* (playerdata-playerrot player)))
+;		  (format t "handle-turn: rad1=~A~%" rad)
+		  )
+		 ((>= (* -1 *PLAYER-MAX-ROT*) (+ rad (playerdata-playerrot player)))
+		  (setf rad (- (* -1 *PLAYER-MAX-ROT*) (playerdata-playerrot player)))
+;		  (format t "handle-turn: rad2=~A~%" rad)
+		  )))
+	  (t
+	   (when (not (zerop (playerdata-playerrot player))) ; rotate back ship after turns
+	     (setf rad (* 
+			(if (> (playerdata-playerrot player) 0) -1.0 1.0)
+		        *PlAYER-BACK-ROT-SPEED*
+			(adjust-float (* *TURNSPEED* elapsedt)))))))
 
-  (cond ((>= 0 (playerdata-rely player))
-	 (llgs-engine-cl:render-rotatescenenodex (entitydata-node player) 
-						 (* (playerdata-rely player) (adjust-float (* *ROLLSPEED* elapsedt))))
-	 (llgs-engine-cl:colldet-syncolobjtoscenenode (entitydata-physobj player) (entitydata-node player)))
-	((< 0 (playerdata-rely player))
-	 (llgs-engine-cl:render-rotatescenenodex (entitydata-node player) 
-						 (* (playerdata-rely player) (adjust-float (* *ROLLSPEED* elapsedt))))
-	 (llgs-engine-cl:colldet-syncolobjtoscenenode (entitydata-physobj player) (entitydata-node player))))
+    (incf (playerdata-playerrot player) rad)
+    (llgs-engine-cl:render-rotatescenenodey (playerdata-pitchnode player) (adjust-float rad)))
+  
+  (if (not (zerop (playerdata-rely player)))
+      (llgs-engine-cl:render-rotatescenenodex (entitydata-node player) (* (playerdata-rely player) (adjust-float (* *ROLLSPEED* elapsedt)))))
+
+    (llgs-engine-cl:colldet-syncolobjtoscenenode (entitydata-physobj player) (entitydata-node player))
   )
 
 (defun handle-flymode (player elapsedt)
@@ -115,18 +126,28 @@
 		(go-forward player elapsedt))
 	       ((eq (playerdata-movementdir player) 'backward)
 		(go-backward player elapsedt)))
+	 (setf (playerdata-movementdir player) nil)
 	 (setf (playerdata-bouncetime player) 0))
 	(t
 	 (cond ((playerdata-bouncing player)
 		(incf (playerdata-bouncetime player) elapsedt)
-		(cond ((eq (playerdata-movementdir player) 'forward)
-		       (setf (playerdata-movementdir player) 'backward)
-;		       (go-backward player elapsedt)
-		       )
-		      ((eq (playerdata-movementdir player) 'backward)
-		       (setf (playerdata-movementdir player) 'forward)
-;		       (go-forward player elapsedt)
-		       )))
+
+		(cond ((>= (playerdata-bouncetime player) *PLAYER-BOUNCE-TIMEOUT*)
+;		       (format t "Bouncing penalty to player ~A~%" (playerdata-bouncepenalty player))
+		       (setf (playerdata-bouncetime player) 0)
+		       (decf (playerdata-integrity player) (playerdata-bouncepenalty player))
+		       (when (>= 0 (playerdata-integrity player))
+			 (setf (playerdata-integrity player) 0)
+			 (game-over player))
+		       (update-integrity-hud player))
+;		(cond ((eq (playerdata-movementdir player) 'forward)
+;		       (setf (playerdata-movementdir player) 'backward)
+;;		       (go-backward player elapsedt)
+;		       )
+;		      ((eq (playerdata-movementdir player) 'backward)
+;		       (setf (playerdata-movementdir player) 'forward)
+;;		       (go-forward player elapsedt)))
+		      ))
 	       (t 
 		(setf (playerdata-movementdir player) 'forward)
 		(setf (playerdata-bouncetime player) 0)
@@ -167,9 +188,10 @@
   (update-points-hud player)
   (setf (playerdata-relx player) 0)
   (setf (playerdata-rely player) 0)
-  (setf (playerdata-movementdir player) nil)
-  (setf (playerdata-bouncing player) nil)
   )
+
+(defun player-reset-collinfo (player)
+    (setf (playerdata-bouncing player) nil))
 
 (defun collision-player (player otherentity)
 ;  (format t "Player collided with entity type ~A~%" (entitydata-type otherentity))
@@ -182,16 +204,8 @@
 
 (defun player-bounce (player otherent penalty)
   (declare (ignore otherent))
-  (when (not (playerdata-flymode player))
-    (cond ((>= (playerdata-bouncetime player) *PLAYER-BOUNCE-TIMEOUT*)
-	   (format t "Bouncing penalty to player ~A~%" penalty)
-	   (setf (playerdata-bouncetime player) 0)
-	   (decf (playerdata-integrity player) penalty)
-	   (when (>= 0 (playerdata-integrity player))
-	     (setf (playerdata-integrity player) 0)
-	     (game-over player))
-	   (update-integrity-hud player)))
-    (setf (playerdata-bouncing player) t)))
+  (setf (playerdata-bouncepenalty player) penalty)
+  (setf (playerdata-bouncing player) t))
 
 (defun player-rightturn (player relx)
   (setf (playerdata-relx player) relx))
@@ -237,10 +251,30 @@
   (llgs-engine-cl:render-createsimpletext
    *RETICLEPANELID* "[ ]" "DroidSans" 0.04 0.485 0.482 1.0 1.0 0)
 
+  (llgs-engine-cl:render-simpletextcolor *WEAPONPANELID* 
+					 (first *GREEN-COLOR*)
+					 (second *GREEN-COLOR*)
+					 (third *GREEN-COLOR*))
+  (llgs-engine-cl:render-simpletextcolor *INTEGPANELID*
+ 					 (first *GREEN-COLOR*)
+					 (second *GREEN-COLOR*)
+					 (third *GREEN-COLOR*))
+
   ; TODO shield, powerups
   )
 
 (defun update-integrity-hud (player)
+  (let ((swep (/ (playerdata-startweaponenergy player) 100)))
+    (if (< (playerdata-weaponenergy player) (* 35 swep))
+	(llgs-engine-cl:render-simpletextcolor *INTEGPANELID* 
+					       (first *ORANGE-COLOR*)
+					       (second *ORANGE-COLOR*)
+					       (third *ORANGE-COLOR*)))
+    (if (< (playerdata-weaponenergy player) (* 5 swep))
+	(llgs-engine-cl:render-simpletextcolor *INTEGPANELID*
+					       (first *ORANGE-COLOR*)
+					       (second *ORANGE-COLOR*)
+					       (third *ORANGE-COLOR*))))
   (llgs-engine-cl:render-simpletextsettext 
    *INTEGPANELID* 
    (make-hud-string "Ship integrity: " (playerdata-integrity player))))
@@ -248,9 +282,15 @@
 (defun update-weapon-hud (player)
   (let ((swep (/ (playerdata-startweaponenergy player) 100)))
     (if (< (playerdata-weaponenergy player) (* 35 swep))
-	(llgs-engine-cl:render-simpletextcolor *WEAPONPANELID* 255.0 127.0 80.0))
+	(llgs-engine-cl:render-simpletextcolor *WEAPONPANELID*
+					       (first *ORANGE-COLOR*)
+					       (second *ORANGE-COLOR*)
+					       (third *ORANGE-COLOR*)))
     (if (< (playerdata-weaponenergy player) (* 5 swep))
-	(llgs-engine-cl:render-simpletextcolor *WEAPONPANELID* 255.0 0.0 0.0)))
+	(llgs-engine-cl:render-simpletextcolor *WEAPONPANELID*
+					       (first *RED-COLOR*)
+					       (second *RED-COLOR*)
+					       (third *RED-COLOR*))))
   (llgs-engine-cl:render-simpletextsettext 
    *WEAPONPANELID*
    (make-hud-string "Weapon energy: " (playerdata-weaponenergy player))))
