@@ -23,30 +23,31 @@
 (defun parse-cmdargs (args)
   "Parse command line and return game initialization parameters."
   (format t "parse-cmdargs: ~A~%" args)
-  (let ((pluginsfile "plugins_d.cfg")
+  (let ((pluginsfile "plugins.cfg")
 	(cfgfile "tubegame.cfg")
 	(logfile "tubegame.log")
-	(rendersys 'directx)
-	(resfile "resources_d.cfg")
+	(rendersys 'opengl) ;'directx)
+	(resfile "resources.cfg")
 	(w 800) (h 600) (fullscreen 0)
-	(help nil) (debug t)
+	(help nil) (debug nil)
 	(wp (member "-w" args :test #'equal))
 	(hp (member "-h" args :test #'equal))
 	(fp (member "-f" args :test #'equal))
 	(?p (member "-?" args :test #'equal)))
-      (if (and wp (conv-to-int (second wp))) (setf w (conv-to-int (second wp))))
-      (if (and hp (conv-to-int (second hp))) (setf h (conv-to-int (second hp))))
-      (if fp (setf fullscreen 1))
-      (if ?p (setf help t))
+;    (break)
+    (if (and wp (conv-to-int (second wp))) (setf w (conv-to-int (second wp))))
+    (if (and hp (conv-to-int (second hp))) (setf h (conv-to-int (second hp))))
+    (if fp (setf fullscreen 1))
+    (if ?p (setf help t))
     (list pluginsfile cfgfile logfile rendersys resfile w h fullscreen help debug)))
 
 (defun debugmodep (params)
-  (last params))
+  (first (last params)))
  
 (defun init-game (params)
   (let ((indebugmode (debugmodep params)))
-    (format t "Initializing game in ~A mode.~%" 
-	    (if indebugmode "DEBUG" "RELEASE"))
+    (format t "Initializing game in ~A mode.~%Params: ~A\%" 
+	    (if indebugmode "DEBUG" "RELEASE") params)
     (format t "Loading llgs engine...~A~%" (llgs-engine-cl:load-llgsengine indebugmode))
     (format t "Initialize rendering...~A~%" 
 	    (llgs-engine-cl:render-init 
@@ -82,18 +83,7 @@
       (llgs-engine-cl:render-setlighttype light "POINT")
       (llgs-engine-cl:render-lightdiffcolor light 0.4 0.4 0.4)
       (llgs-engine-cl:render-setlightpos light 100.0 100.0 0.0))
-    )
-  (format t "Gamelabel...~A~%" 
-	  (llgs-engine-cl:render-createsimpletext "st_gamelabel" *GAMELABEL*
-						  "DroidSans-Bold" 
-						  0.06 0.01 0.90 1.0 1.0 0))
-  (llgs-engine-cl:render-simpletextcolor "st_gamelabel" 
-					 (first *LABELCOLOR*) (second *LABELCOLOR*) (third *LABELCOLOR*))
-  (llgs-engine-cl:render-createsimpletext "st_copylabel" *COPYRIGHT*
-					  "DroidSans" 
-					  0.03 0.01 0.96 1.0 1.0 0)
-;  (llgs-engine-cl:render-simpletextshow "st_gamelabel")
-)
+    ))
 
 (defun game-run ()
   "Call this to start and run the game."

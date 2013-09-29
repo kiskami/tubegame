@@ -7,6 +7,12 @@ Enjoy!
 Source code is at http://code.google.com/p/tubegame/
 Github mirror at https://github.com/kiskami/tubegame
 
+This program requires some Microsoft Visual C++ 2010
+runtime components. If you get a MSVCP100.dll missing
+error, please download and install the redistributable 
+package from Microsoft:
+http://www.microsoft.com/en-us/download/details.aspx?id=5555
+
 tubegame
 Copyright (c) 2013 Kalman Kiss, Zalaegerszeg Hungary
 

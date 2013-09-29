@@ -22,15 +22,16 @@
 					       mesh *PLAYER-PHYS-GRP* *PLAYER-PHYS-MASK*)
 		  :levelpoints 0
 		  :integrity (leveldata-playerstructintegritystart level)
+		  :startweaponenergy (leveldata-playerweaponenergystart level)
 		  :weaponenergy (leveldata-playerweaponenergystart level)
 		  :shieldenergy (leveldata-playershieldenergystart level)
 		  :updatefunc #'update-player
 		  :collfunc #'collision-player
-		  :bouncetimer (llgs-engine-cl:timer-create)
+		  :bouncetime 0
 		  :bouncing nil
 		  :firetime *PLAYER-FIRE-TIMEOUT*
 		  :firing nil
-		  :movementdir nil
+		  :movementdir 'forward
 		  :relx 0
 		  :rely 0
 		  :bulletbillbnode (llgs-engine-cl:render-createchildscenenode
@@ -39,12 +40,14 @@
 		  :bulletbillbset (llgs-engine-cl:billboardset-create)
 		  :flymode nil)))
     (llgs-engine-cl:render-attachmoveable pitchnode mesh)
+    (llgs-engine-cl:render-attachmoveable (playerdata-bulletbillbnode plyent) (playerdata-bulletbillbset plyent))
     (let ((startpos (first (leveldata-startposlist level))))
       (if (not startpos)
 	  (setf startpos *PLAYER-INITIAL-POS*))
       (llgs-engine-cl:render-setscenenodepos node (first startpos) (second startpos) (third startpos)))
     (llgs-engine-cl:render-setscenenodescale pitchnode (first *PLAYER-NODE-SCALE*)
 					     (second *PLAYER-NODE-SCALE*) (third *PLAYER-NODE-SCALE*))
+
     (llgs-engine-cl:render-rotatescenenodez node (adjust-float (deg-to-rad 90)))
     (llgs-engine-cl:render-rotatescenenodey node (adjust-float (deg-to-rad 90)))
     (llgs-engine-cl:colldet-syncolobjtoscenenode (entitydata-physobj plyent) node)
@@ -52,7 +55,6 @@
 				     (second *PLAYER-NODE-SCALE*) (third *PLAYER-NODE-SCALE*))
     (llgs-engine-cl:billboardset-setdefdims (playerdata-bulletbillbset plyent) *PLAYER-BULLET-W* *PLAYER-BULLET-H*)
     (llgs-engine-cl:billboardset-setmaterial (playerdata-bulletbillbset plyent) *PLAYER-BULLET-MAT*)
-    (llgs-engine-cl:render-attachmoveable (playerdata-bulletbillbnode plyent) (playerdata-bulletbillbset plyent))
     plyent))
 
 (defun reset-player (player level)
@@ -82,8 +84,15 @@
   (del-from-physobjmap (entitydata-physobj player))
   (hide-hud))
 
-(defun update-player (player elapsedt)
-  "Update player state according to input and collision events"
+(defun go-forward (player elapsedt)
+  (llgs-engine-cl:render-translatescenenode (entitydata-node player) 0.0 (adjust-float (* -1.0 *FLYSPEED* elapsedt)) 0.0 t)
+  (llgs-engine-cl:colldet-syncolobjtoscenenode (entitydata-physobj player) (entitydata-node player)))
+
+(defun go-backward (player elapsedt)
+  (llgs-engine-cl:render-translatescenenode (entitydata-node player) 0.0 (adjust-float (* *FLYSPEED* elapsedt)) 0.0 t)
+  (llgs-engine-cl:colldet-syncolobjtoscenenode (entitydata-physobj player) (entitydata-node player)))
+
+(defun handle-turn (player elapsedt)
   (when (not (= 0 (playerdata-relx player)))
     (let ((rad (* -1.0 (playerdata-relx player) (adjust-float (* *TURNSPEED* elapsedt)))))
       (llgs-engine-cl:render-rotatescenenodez (entitydata-node player) rad)
@@ -98,20 +107,38 @@
 	 (llgs-engine-cl:render-rotatescenenodex (entitydata-node player) 
 						 (* (playerdata-rely player) (adjust-float (* *ROLLSPEED* elapsedt))))
 	 (llgs-engine-cl:colldet-syncolobjtoscenenode (entitydata-physobj player) (entitydata-node player))))
+  )
 
-  (when (or (not (playerdata-bouncing player)) (playerdata-flymode player))
-    (cond ((eq (playerdata-movementdir player) 'forward)
-	   (llgs-engine-cl:render-translatescenenode (entitydata-node player) 0.0 (adjust-float (* -1.0 *FLYSPEED* elapsedt)) 0.0 t)
-	   (llgs-engine-cl:colldet-syncolobjtoscenenode (entitydata-physobj player) (entitydata-node player)))
-	  ((eq (playerdata-movementdir player) 'backward)
-	   (llgs-engine-cl:render-translatescenenode (entitydata-node player) 0.0 (adjust-float (* *FLYSPEED* elapsedt)) 0.0 t)
-	   (llgs-engine-cl:colldet-syncolobjtoscenenode (entitydata-physobj player) (entitydata-node player)))))
+(defun handle-flymode (player elapsedt)
+  (cond ((playerdata-flymode player) ; freefly mode?
+	 (cond ((eq (playerdata-movementdir player) 'forward)
+		(go-forward player elapsedt))
+	       ((eq (playerdata-movementdir player) 'backward)
+		(go-backward player elapsedt)))
+	 (setf (playerdata-bouncetime player) 0))
+	(t
+	 (cond ((playerdata-bouncing player)
+		(incf (playerdata-bouncetime player) elapsedt)
+		(cond ((eq (playerdata-movementdir player) 'forward)
+		       (setf (playerdata-movementdir player) 'backward)
+;		       (go-backward player elapsedt)
+		       )
+		      ((eq (playerdata-movementdir player) 'backward)
+		       (setf (playerdata-movementdir player) 'forward)
+;		       (go-forward player elapsedt)
+		       )))
+	       (t 
+		(setf (playerdata-movementdir player) 'forward)
+		(setf (playerdata-bouncetime player) 0)
+		(go-forward player elapsedt)))))
+  )
 
+(defun handle-firing (player elapsedt)
   (cond ((playerdata-firing player)
 	 (cond ((>= (+ (playerdata-firetime player) elapsedt) *PLAYER-FIRE-TIMEOUT*)
 		(decf (playerdata-weaponenergy player) *BULLET-ENERGY*)
 		(cond ((< 0 (playerdata-weaponenergy player))
-		       (format t "FIRE!~%")
+;		       (format t "FIRE!~%")
 		       (let ((pos (llgs-engine-cl:render-getscenenodepos (playerdata-node player))))
 			 (add-entity (apply #'create-bullet 'playerbullet 
 					    (list (playerdata-bulletbillbset player) 
@@ -126,28 +153,45 @@
 	 (setf (playerdata-firing player) nil))
 	(t
 	 (incf (playerdata-firetime player) elapsedt)))
+  )
+
+(defun update-player (player elapsedt)
+  "Update player state according to input and collision events"
+
+  (handle-turn player elapsedt)
+
+  (handle-flymode player elapsedt)
+
+  (handle-firing player elapsedt)
 
   (update-points-hud player)
   (setf (playerdata-relx player) 0)
   (setf (playerdata-rely player) 0)
   (setf (playerdata-movementdir player) nil)
   (setf (playerdata-bouncing player) nil)
-)
+  )
 
 (defun collision-player (player otherentity)
 ;  (format t "Player collided with entity type ~A~%" (entitydata-type otherentity))
-  (cond ((eq 'asteroid (entitydata-type otherentity)) (player-bounce player otherentity *ASTEROID-BOUNCE-PENALTY*))
-	((eq 'cube (entitydata-type otherentity)) (player-bounce player otherentity *CUBE-BOUNCE-PENALTY*)))
-  ;TODO: cel, powerups colldet!
+  (cond ((eq 'asteroid (entitydata-type otherentity))
+	 (player-bounce player otherentity *ASTEROID-BOUNCE-PENALTY*))
+	((eq 'cube (entitydata-type otherentity))
+	 (player-bounce player otherentity *CUBE-BOUNCE-PENALTY*)))
+  ;TODO: powerups colldet!
   )
 
 (defun player-bounce (player otherent penalty)
-  (decf (playerdata-integrity player) penalty)
-  (when (>= 0 (playerdata-integrity player))
-      (setf (playerdata-integrity player) 0)
-      (game-over player))
-  (setf (playerdata-bouncing player) t)
-  (update-integrity-hud player))
+  (declare (ignore otherent))
+  (when (not (playerdata-flymode player))
+    (cond ((>= (playerdata-bouncetime player) *PLAYER-BOUNCE-TIMEOUT*)
+	   (format t "Bouncing penalty to player ~A~%" penalty)
+	   (setf (playerdata-bouncetime player) 0)
+	   (decf (playerdata-integrity player) penalty)
+	   (when (>= 0 (playerdata-integrity player))
+	     (setf (playerdata-integrity player) 0)
+	     (game-over player))
+	   (update-integrity-hud player)))
+    (setf (playerdata-bouncing player) t)))
 
 (defun player-rightturn (player relx)
   (setf (playerdata-relx player) relx))
@@ -162,14 +206,17 @@
   (setf (playerdata-rely player) rely))
 
 (defun player-fire (player elapsedt)
+  (declare (ignore elapsedt))
 ;  (format t "Player fire~%")
   (setf (playerdata-firing player) t))
 
 (defun player-forward (player)
-  (setf (playerdata-movementdir player) 'forward))
+  (when (playerdata-flymode player)
+    (setf (playerdata-movementdir player) 'forward)))
 
 (defun player-backward (player)
-  (setf (playerdata-movementdir player) 'backward))
+  (when (playerdata-flymode player)
+    (setf (playerdata-movementdir player) 'backward)))
 
 (defun show-hud (player)
   ;points
@@ -187,6 +234,9 @@
    *WEAPONPANELID*
    (make-hud-string "Weapon energy: " (playerdata-weaponenergy player))
    "DroidSans" 24.0 10.0 71.0 1.0 1.0 1)
+  (llgs-engine-cl:render-createsimpletext
+   *RETICLEPANELID* "[ ]" "DroidSans" 0.04 0.485 0.482 1.0 1.0 0)
+
   ; TODO shield, powerups
   )
 
@@ -196,6 +246,11 @@
    (make-hud-string "Ship integrity: " (playerdata-integrity player))))
 
 (defun update-weapon-hud (player)
+  (let ((swep (/ (playerdata-startweaponenergy player) 100)))
+    (if (< (playerdata-weaponenergy player) (* 35 swep))
+	(llgs-engine-cl:render-simpletextcolor *WEAPONPANELID* 255.0 127.0 80.0))
+    (if (< (playerdata-weaponenergy player) (* 5 swep))
+	(llgs-engine-cl:render-simpletextcolor *WEAPONPANELID* 255.0 0.0 0.0)))
   (llgs-engine-cl:render-simpletextsettext 
    *WEAPONPANELID*
    (make-hud-string "Weapon energy: " (playerdata-weaponenergy player))))
@@ -208,7 +263,26 @@
 (defun hide-hud ())
 
 (defun game-over (player)
-  (format t "*** GAME OVER ***~%"))
+  (declare (ignore player))
+;  (format t "*** GAME OVER ***~%")
+  (llgs-engine-cl:render-createsimpletext "game_over" *GAME-OVER* 
+					  "DroidSans-Bold"
+					  0.10 0.2 0.4 1.0 1.0 0)
+  (llgs-engine-cl:render-createsimpletext "st_pressany2" *PRESS-ANY-KEY2*
+					  "DroidSans-Bold"
+					  0.05 0.33 0.5 1.0 1.0 0)
+  (setf *ENTITIES* nil)
+  (setf *PHYSOBJMAP* (make-hash-table))
+  (add-entity (make-explosiondata
+	       :type 'game-over
+	       :lifetime 0
+	       :updatefunc #'game-over-update)))
+
+(defun game-over-update (ent elapsedt)
+  (incf (explosiondata-lifetime ent) elapsedt)
+  (when (and (< *GAME-OVER-TIMEOUT* (explosiondata-lifetime ent)) (= 1 (llgs-engine-cl:i-anykeypressed)))
+    (setf *game-should-exit* t)))
 
 (defun player-toggle-flymode (player)
-  (setf (playerdata-flymode player) (not (playerdata-flymode player))))
+  (setf (playerdata-flymode player) (not (playerdata-flymode player)))
+  (format t "Switched player flymode to ~A~%" (playerdata-flymode player)))

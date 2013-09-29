@@ -20,18 +20,21 @@ mkdir data\models
 copy ..\..\data\models\*.mesh data\models
 copy ..\..\data\models\*.material data\models
 
+mkdir data\splash
+copy ..\..\data\splash\* data\splash
+
 mkdir bin
-copy ..\..\target\OgreMain_d.dll bin
-copy ..\..\target\Plugin_BSPSceneManager_d.dll bin
-copy ..\..\target\Plugin_CgProgramManager_d.dll bin
-copy ..\..\target\Plugin_OctreeSceneManager_d.dll bin
-copy ..\..\target\Plugin_ParticleFX_d.dll bin
-copy ..\..\target\RenderSystem_Direct3D9_d.dll bin
-copy ..\..\target\RenderSystem_GL_d.dll bin
+copy ..\..\target\OgreMain.dll bin
+copy ..\..\target\Plugin_BSPSceneManager.dll bin
+copy ..\..\target\Plugin_CgProgramManager.dll bin
+copy ..\..\target\Plugin_OctreeSceneManager.dll bin
+copy ..\..\target\Plugin_ParticleFX.dll bin
+copy ..\..\target\RenderSystem_Direct3D9.dll bin
+copy ..\..\target\RenderSystem_GL.dll bin
 copy ..\..\target\cg.dll bin
-copy ..\..\target\llgs-engine-debug.dll bin
-copy ..\..\target\plugins_d.cfg bin
-copy ..\..\target\resources_d.cfg bin
+copy ..\..\target\llgs-engine.dll bin
+copy ..\..\target\plugins.cfg bin
+copy ..\..\target\resources.cfg bin
 copy ..\..\target\tubegame.exe bin
 
 zip -r ..\tubegame-0.1.zip *

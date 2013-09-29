@@ -35,16 +35,15 @@
   (llgs-engine-cl:billboard-remove (bulletdata-billset bullet) (bulletdata-billboard bullet))
   (remove-entity bullet)
   (del-from-physobjmap (bulletdata-physobj bullet))
-  (del-physobj (bulletdata-physobj bullet))
-  (add-entity (create-bullet-explosion bullet)))
+  (del-physobj (bulletdata-physobj bullet)))
 
 (defun bullet-update (bullet elapsedt)
   (let ((distdelta (* elapsedt *BULLETSPEED*)))
-    (cond ((<= *BULLET-MAXDIST* (+ distdelta (bulletdata-flydist bullet)))
-	   (blow-bullet bullet))
-	  (t
 	   (incf (bulletdata-flydist bullet) distdelta)
-	   (bullet-flystep bullet distdelta)))))
+	   (cond ((<= *BULLET-MAXDIST* (bulletdata-flydist bullet))
+		  (blow-bullet bullet))
+		 (t
+		  (bullet-flystep bullet distdelta)))))
 
 (defun bullet-collfunc (bullet otherobj)
   (when otherobj
@@ -56,9 +55,6 @@
 	   (add-points-to-owner (bulletdata-owner bullet) (bulletdata-energy bullet))
 	   (damage-asteroid otherobj (bulletdata-energy bullet))))
     (blow-bullet bullet)))
-
-(defun create-bullet-explosion (bullet)
-  nil)
 
 (defun calc-bullet-startpos (x y z)
   (list x y z))

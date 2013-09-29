@@ -7,9 +7,38 @@
 
 (in-package #:tubegame)
 
-(defconstant *GAMELABEL* "tubegame - a 3D space shoot'em up")
-(defconstant *COPYRIGHT* "Copyright (C) 2013 Kalman Kiss <kiskami@freemail.hu>, Hungary")
+(defconstant *GAMELABEL* "tubegame")
+(defconstant *GAMELABEL2* "a 3D space shoot'em up")
+(defconstant *COPYRIGHT* "Copyright (c) 2013 Kalman Kiss, Zalaegerszeg Hungary
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+Source code is at http://code.google.com/p/tubegame
+Github mirror at https://github.com/kiskami/tubegame
+")
+
 (defconstant *RIGHTS* "All rights reserved.")
+
+(defconstant *CONTROLS* "Control your ship with mouselook, left mouse 
+button shoots, ESC quits, screenshot with F11.")
+
+(defconstant *PRESS-ANY-KEY* "Press any key to start!")
+(defconstant *PRESS-ANY-KEY2* "Press any key to quit!")
+
+(defconstant *GAME-OVER* "G A M E  O V E R")
+(defconstant *GAME-OVER-TIMEOUT* 5.0)
 
 ; ------------------------------------------------
 
@@ -25,6 +54,8 @@
 (defconstant *MAIN-CAMERA-INITIAL-POS* '(-1.0 1.0 0.0))
 (defconstant *MAIN-CAMERA-INITIAL-LOOKAT* '(0.0 0.0 0.0))
 
+(defconstant *STARTSCREEN-CAMROT-SPEED* 0.005)
+
 (defconstant *PLAYER-INITIAL-POS* '(0.0 0.0 0.0))
 (defconstant *PLAYER-NODE-SCALE* '(0.01 0.01 0.01))
 
@@ -32,14 +63,14 @@
 
 (defconstant *TURNSPEED* (* *ONEDEGREE* 14))
 (defconstant *ROLLSPEED* (* *ONEDEGREE* 12))
-(defconstant *FLYSPEED* 1)
+(defconstant *FLYSPEED* 0.5)
 (defconstant *BULLETSPEED* 1.75)
 
 (defconstant *SKYBOX-MAT* "backgrounds/FirstSimpleStarField" "Skybox material name.")
 (defconstant *LEVEL1-FILE* "../data/level1.lisp" "Game level 1 file.")
 
 (defconstant *ESC-KEY* 1 "OIS scan code for ESC key.")
-(defconstant *F10-KEY* #x56 "OIS scan code for F10 key.")
+(defconstant *F10-KEY* #x44 "OIS scan code for F10 key.")
 (defconstant *F11-KEY* #x57 "OIS scan code for F11 key.")
 (defconstant *F12-KEY* #x58 "OIS scan code for F12 key.")
 (defconstant *W-key* #x11)
@@ -74,6 +105,8 @@
 (defconstant *ASTEROID2-MESH* "Asteroida2.mesh" "Asteroid 2 Ogre mesh resource name")
 (defconstant *ASTEROID3-MESH* "Asteroida3.mesh" "Asteroid 3 Ogre mesh resource name")
 
+(defconstant *CEL-MESH* "Cel.mesh" "Level end object mesh resource name")
+
 (defconstant *ASTEROID1-SCALE* 0.2)
 (defconstant *ASTEROID2-SCALE* 0.12)
 (defconstant *ASTEROID3-SCALE* 0.05)
@@ -85,22 +118,32 @@
 (defconstant *EXPLOSION-AST3-W* 0.2)
 (defconstant *EXPLOSION-AST3-H* 0.2)
 
+(defconstant *CELCIL-HALFEXT1* 0.33)
+(defconstant *CELCIL-HALFEXT2* 0.01)
+(defconstant *CELCIL-HALFEXT3* 0.33)
+
+(defconstant *CELNODE-SCALE* '(0.4 0.4 0.4))
+(defconstant *CEL-ROT-SPEED* 0.05)
+
 ; ------------------------------------------------
 
 (defconstant *PLAYER-PHYS-GRP* 1)
-(defconstant *PLAYER-PHYS-MASK* (+ 2 4 8 16 32 64 128))
+(defconstant *PLAYER-PHYS-MASK* (+ 2 4 8 16 32 64 128 256))
 (defconstant *BULLET-PHYS-GRP* 2)
 (defconstant *BULLET-PHYS-MASK* (+ 4 8 32 128))
 (defconstant *CUBE-PHYS-GRP* 4)
 (defconstant *CUBE-PHYS-MASK* (+ 1 2 64 128))
 (defconstant *ASTEROIDA-PHYS-GRP* 8)
 (defconstant *ASTEROIDA-PHYS-MASK* (+ 1 2 64 128))
+(defconstant *CEL-PHYS-GRP* 256)
+(defconstant *CEL-PHYS-MASK* 1)
 
 ; ------------------------------------------------
 
 (defconstant *ASTEROID-BOUNCE-PENALTY* 5)
 (defconstant *CUBE-BOUNCE-PENALTY* 3)
 
+(defconstant *PLAYER-BOUNCE-TIMEOUT* 1.0)
 (defconstant *PLAYER-FIRE-TIMEOUT* 0.5)
 
 (defconstant *ASTEROID1-ENERGY* 100)
@@ -133,10 +176,11 @@
 (defconstant *INTEGPANELID*  "player_integrity")
 (defconstant *WEAPONPANELID* "player_weapon_energy")
 (defconstant *SHIELDPANELID* "player_shield_energy")
+(defconstant *RETICLEPANELID* "player_reticle")
 
 ; ------------------------------------------------
 
-(defparameter *PHYSOBJMAP* (make-hash-table) "Physics objects pointer->entity map.")
+(defparameter *PHYSOBJMAP* nil "Physics objects pointer->entity map.")
 (defparameter *PHYSOBJMAP-TRASH* nil)
 (defparameter *ENTITIES* '() "Game entities list.")
 
@@ -162,9 +206,10 @@
 (defstruct (playerdata (:include entitydata))
   levelpoints
   integrity
+  startweaponenergy
   weaponenergy
   shieldenergy
-  bouncetimer
+  bouncetime
   bouncing
   firetime
   firing

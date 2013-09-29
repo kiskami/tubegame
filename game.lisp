@@ -28,7 +28,7 @@
 (defun toggle-flymode (player)
   (when (<= *FLYMODE-SWITCH-TIMEOUT* *flymode-switch-time*)
     (setq *flymode-switch-time* 0)
-    (format t "Switching fly mode.~%")
+;    (format t "Switching fly mode.~%")
     (player-toggle-flymode player)))
 
 (defun one-game-frame (elapsedt)
@@ -36,6 +36,7 @@
   (cond ((equal *GAME-STATE* 'none)
 	 ; first time or a new try?
 	 (setf *ENTITIES* nil)
+	 (setf *PHYSOBJMAP* (make-hash-table))
 
 	 (if (not *LEVEL*) (setq *LEVEL* (load-level1)) (reset-level *LEVEL*))
 	 (if (not *PLAYER*) (setq *PLAYER* (load-player *LEVEL*)) (reset-player *PLAYER* *LEVEL*))
@@ -235,8 +236,34 @@
   nil)
 
 (defun create-endpoint (x y z)
-  (declare (ignore x y z))
-  nil)
+  (let* ((pos (calc-cube-pos (adjust-float x) (adjust-float y) (adjust-float z)))
+	(mesh (llgs-engine-cl:mesh-load (gen-name "cel" x y z) *CEL-MESH*))
+	(node (llgs-engine-cl:render-createscenenode (gen-name "cel" x y z)))
+	(celent (make-entitydata
+		 :type 'cel
+		 :mesh mesh
+		 :node node
+		 :physobj (llgs-engine-cl:colldet-addcylinder (first pos) 
+							      (second pos)
+							      (third pos)
+							      *CELCIL-HALFEXT1*
+							      *CELCIL-HALFEXT2*
+							      *CELCIL-HALFEXT3*
+							      *CEL-PHYS-GRP*
+							      *CEL-PHYS-MASK*)
+		 :updatefunc #'cel-update
+		 :collfunc #'cel-colldet)))
+    (llgs-engine-cl:render-attachmoveable node mesh)
+    (llgs-engine-cl:render-addchild (llgs-engine-cl:render-rootscenenode) node)
+    (llgs-engine-cl:render-setscenenodepos node (first pos) (second pos) (third pos))
+    (llgs-engine-cl:render-setscenenodescale node 
+					     (first *CELNODE-SCALE*)
+					     (second *CELNODE-SCALE*)
+					     (third *CELNODE-SCALE*))
+    (llgs-engine-cl:render-rotatescenenodez node (adjust-float (/ pi 2)))
+    (llgs-engine-cl:colldet-syncolobjtoscenenode (entitydata-physobj celent) (entitydata-node celent))
+    (add-to-physobjmap (entitydata-physobj celent) celent)
+    celent))
 
 (defun create-strinteg-powerup (x y z ss)
   (declare (ignore x y z ss))
@@ -261,3 +288,15 @@
 (defun create-enemy (x y z ene)
   (declare (ignore x y z ene))
   nil)
+
+(defun cel-colldet (cel otherobj)
+;  (format t "cel-colldet: collision with ~A~%" otherobj)
+  (game-over otherobj))
+
+(defun cel-update (e elapsedt)
+  (when (< 0 elapsedt)
+    (llgs-engine-cl:render-rotatescenenodey (entitydata-node e) 
+					    (* *CEL-ROT-SPEED* elapsedt))
+;    (llgs-engine-cl:colldet-syncolobjtoscenenode (entitydata-physobj e) 
+;						 (entitydata-node e))
+    ))

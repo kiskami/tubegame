@@ -8,8 +8,8 @@
 (in-package #:tubegame)
 
 (defun adjust-float (f)
-  "Truncate floats to 5 decimal fraction."
-  (/ (truncate (* f 100000.0)) 100000.0))
+  "Truncate floats to 6 decimal fraction."
+  (/ (truncate (* f 1000000.0)) 1000000.0))
 
 (defun deg-to-rad (deg)
   (* deg *ONEDEGREE*))
