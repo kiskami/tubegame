@@ -123,7 +123,7 @@
 
 (defun show-level-and-player (level player)
   (show-level level)
-  (show-player player *main-camera-node*))
+  (show-player player *main-camera-node* level))
 
 (defun dimX (level)
   (first (first level)))
@@ -159,7 +159,9 @@
 	(add-entity (create-cube x y z cube rotx roty rotz))
 	(when sta 
 	  (add-entity (create-startpoint x y z))
-	  (pushnew (calc-cube-pos (adjust-float x) (adjust-float y) (adjust-float z)) (leveldata-startposlist level)))
+	  (let ((pos (calc-cube-pos (adjust-float x) (adjust-float y) (adjust-float z))))
+	    (pushnew pos (leveldata-startposlist level))
+	    (format t "Registered startpoint at ~A~%" pos)))
 	(if cel (add-entity (create-endpoint x y z)))
 	(if (> ast1 0) (add-entity (create-asteroid x y z 'ast1 ast1)))
 	(if (> ast2 0) (add-entity (create-asteroid x y z 'ast2 ast2)))
